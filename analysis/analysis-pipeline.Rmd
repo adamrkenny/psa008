@@ -514,7 +514,10 @@ df_rq3 <-
     select(id, lab, country, att_min_bias, att_nat_bias, att_fam_bias) %>%
     pivot_longer(cols = c(att_nat_bias, att_fam_bias), # c(starts_with("att")), 
                  names_to = "group_type",
-                 values_to = "real_bias") 
+                 values_to = "real_bias") %>%
+    mutate(group_type = case_when(str_detect(group_type, "nat") ~ "nat",
+                                  str_detect(group_type, "fam") ~ "fam"
+                                  ))
 
 ## real-world
 model_real_world <- 
