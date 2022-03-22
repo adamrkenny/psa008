@@ -7,6 +7,8 @@ output:
     df_print: paged
     toc: yes
     toc_depth: 2
+editor_options: 
+  chunk_output_type: console
 ---
 
 This document describes the analysis pipeline for PSA 008 Minimal Groups. It does not include the power analysis, which is in a separate document. The purpose is to troubleshoot --- some errors might be an artifact of the artificial data. 
@@ -35,6 +37,8 @@ if (length(new_packages))
     install.packages(new_packages, dependencies = TRUE)
 ## load all packages
 sapply(packages, library, character.only = TRUE)
+
+source("./custom-functions.R")
 
 set.seed(1970) # to reproduce analysis
 
@@ -72,11 +76,12 @@ lab_names <-
 ## create list of country names
 country_names <-
     
-    seq(1:n_countries) %>%
+    ## seq(1:n_countries) %>%
+    letters[seq( from = 1, to = n_countries )] %>%
     tibble() %>%
     ## mutate(labs = if_else(. < 10, paste0("country0", .), paste0("country", .))) %>%
     pull()
-
+                   
 ## df with labs randomly matched to a country
 ## with 15 countries with 2 labs
 ## FIXME we'll want 5? USA/Italy/China
@@ -96,7 +101,8 @@ fake_data <-
     expand.grid(id = ids, lab = df_lab_country) %>%
     tibble() %>%
     separate(col = lab, into = c("country", "lab")) %>%
-    select(id, lab, country)
+    select(id, lab, country) %>%
+    mutate(id = c(1:nrow(.)))
     ## FIXME done later  %>%
     ## mutate(country = as.numeric(country),
     ##        lab = as.numeric(lab))
@@ -105,30 +111,17 @@ fake_data <-
 n_labs_countries <-  
     
     nrow(fake_data)/n_ids_per_country
-
 ``` 
 
 Now let's create the minimal group dependent measures, based on the
 three dictator games (in-group--self, out-group--self,
 in-group--out-group) and the average attitude towards in-group and
 towards out-group. The three minimal group measures are: difference
-between in-group and out-group attitudes, difference between
-in-group–self and out-group–self decisions in the dictator game, and
-the decision in the in-group–out-group dictator game.
+between in-group and out-group attitudes (att_bias), difference between
+in-group–self and out-group–self decisions in the dictator game (dg_first_bias), and
+the decision in the in-group–out-group dictator game (dg_third_bias).
 
 ```{r outcomes}
-## create custom function to truncate values
-## as bias ranges from 0 to 10
-rtruncnorm <- function(N, mean = 0, sd = 1, min = -Inf, max = Inf) {
-
-    if (min > max) stop("Error: Truncation range is empty");
-  
-    U <- runif(N, pnorm(min, mean, sd), pnorm(max, mean, sd));
-    
-    qnorm(U, mean, sd); 
-
-}
-
 ## number of participants
 n_total <- nrow(fake_data)
 
@@ -155,13 +148,13 @@ fake_data <-
         att_min_in = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 5, sd = 3, min = 1, max = 7), 
-                0),
+                           mean = 6, sd = 3.5, min = 1, max = 7), 
+                1),
         att_min_out = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 5, sd = 3, min = 1, max = 7), 
-                0)
+                           mean = 2, sd = 3.5, min = 1, max = 7), 
+                1)
     ) %>%
     mutate(dg_min_bias_first = dg_min_in_self - dg_min_out_self,
            dg_min_bias_third = dg_min_in_out,
@@ -170,120 +163,144 @@ fake_data <-
 
 ## Research question 1
 
-```{r meta-analysis}
-## calculate d and sv
-## first calculate various measures (e.g. sd, r)
-## see text for equations
+Let's adjust the dataset accordingly, and run some summary statistics (of att_bias).
+We outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect. 
+
+```{r, rq1-manipulation}
+## set df
+df_rq1 <- fake_data
+
+## distribution of outcome by country
+df_rq1 %>% 
+  ggplot(aes(att_min_bias)) + 
+  geom_density() +
+  facet_wrap(. ~ country)
+
+## descriptives of outcome
+df_rq1 %>% 
+  group_by(country) %>% 
+  summarise(mean = mean(att_min_bias, na.rm = TRUE), 
+            sd = sd(att_min_bias, na.rm = TRUE)) %>% 
+  mutate_if(is.numeric, ~round(., 2)) %>% 
+  print(n = n_countries)
+
+## create longdataframe
 df_rq1 <-
 
     fake_data %>%
-    ## FIXME by lab?
-    group_by(country) %>%
-    summarise(n_sample = n(),
-              ## means per condition
-              mean_min_in_self = mean(dg_min_in_self),
-              mean_min_out_self = mean(dg_min_out_self),
-              ## correlation between conditions
-              r_means = cor(dg_min_in_self, dg_min_out_self),
-              ## standard deviation per condition
-              sd_min_in_self = sd(dg_min_in_self),
-              sd_min_out_self = sd(dg_min_out_self),
-              sd_z = sqrt(sd_min_in_self^2 + sd_min_out_self^2 + 
-                          2*r_means*sd_min_in_self*sd_min_in_self),
-              sd_rm = sd_z / (sqrt(2*(1 - r_means))),
-              ## effect size
-              d = (mean_min_in_self - mean_min_out_self) / sd_rm,
-              g = d * (1 - (3/((4*n_sample) - 9))), # FIXME check
-              ## sampling variance # FIXME d or g?
-              sv = (((1/n_sample) + (d^2/(2*n_sample))) * (2*(1 - r_means))),
-              ## 95% confidence intervals
-              ci_low = g - qnorm(0.025, lower.tail = FALSE) * sqrt(sv),
-              ci_up = g - qnorm(0.975, lower.tail = FALSE) * sqrt(sv)
-              )
+    select(id, lab, country, att_min_bias, dg_min_bias_first, dg_min_bias_third) %>%
+    mutate(att_min_bias = as.vector(scale(att_min_bias)),
+           dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
+           dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
+    pivot_longer(cols = c(contains("min_bias")), 
+                 names_to = "measure",
+                 values_to = "min_bias") %>%
+    mutate(measure = case_when(str_detect(measure, "att") ~ "att",
+                                  str_detect(measure, "first") ~ "dg_first",
+                                  str_detect(measure, "third") ~ "dg_third"
+                                  )) %>%
+    mutate(att_dummy = if_else(measure == "att", 1, 0),
+           dg_first_dummy = if_else(measure == "dg_first", 1, 0),
+           dg_third_dummy = if_else(measure == "dg_third", 1, 0)
+           )
+  
+```
 
-## effect size moderated by country
-es_country <-
+We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
 
-    rma.mv(g, # FIXME sample sizes should mean that g not actually required 
-           sv, 
-           ## mods = ~ country,
-           ## random = list(~ 1 | country / lab, ~ 1 | country ),
-           random = list(~ 1 | country),
-           data = df_rq1)
+```{r, rq1-combined-dv-group}
+## model with country
+model_country_all <- 
+
+    lmerTest::lmer(min_bias ~ measure + 
+                       (1 | id)  + 
+                       (measure | lab:country)  + 
+                       (measure | country),
+                   data = df_rq1
+                   ## , contrasts = list(measure = "contr.sum")
+                   )
 
 ## summary
-summary(es_country)
+summary(model_country_all)
 
-## coefficients
-coef(summary(es_country))
+## dotplot
+gg_caterpillar(ranef(model_country_all, condVar = TRUE), QQ = FALSE, 
+              likeDotplot = FALSE)
 
-## heterogeneity (I2)
-## from: https://www.metafor-project.org/doku.php/tips:i2_multilevel_multivariate
-W <- diag(1/es_country$vi)
-X <- model.matrix(es_country)
-P <- W - W %*% X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W
-100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_country$k - es_country$p)/sum(diag(P)))
-
-## custom forest plot
+## predict the scores based on the model
 df_rq1 %>% 
-    arrange(desc(g)) %>%
-    mutate(min_effect = if_else(ci_low < 0 & ci_up > 0, "no", "yes")) %>%
-    ggplot() +
-    aes(x = g, y = reorder(country, g), xmin = ci_low, xmax = ci_up) +
-    geom_vline(xintercept = 0, linetype = 2) +
-    geom_errorbarh(colour = "grey30", height = .1) + 
-    geom_point(aes(colour = min_effect), size = 3) +
-    geom_text(aes(x = 0.95,
-                  label = paste0(
-                      round(g, 2), " [", round(ci_low, 2), ", ", round(ci_up, 2), "]")),
-              hjust = 0) +
-    xlim(-0.5, 1.0) +
-    xlab("effect size (g)") +
-    ylab("country") +
-    guides(colour = "none") +
-    theme_minimal()
-``` 
+  mutate(mdl = predict(model_country_all)) %>%
+  ggplot(aes(min_bias, y = mdl, colour = country, group = country)) + 
+  geom_smooth(se = F, method = lm) +
+  theme_bw() +
+  guides(colour = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks = element_blank())
+```
 
-The above will be repeated for minimal bias in both the third-party
-dictator game and attitudes.
+``` {r, rq1-combined-dv-dummy}
+## country
+model_country_dummy <- 
+
+    lmerTest::lmer(min_bias ~ att_dummy + dg_first_dummy + 
+                       (1 | id)  + 
+                       (att_dummy + dg_first_dummy + dg_third_dummy | lab:country) + 
+                       (att_dummy + dg_first_dummy + dg_third_dummy | country),
+                   data = df_rq1)
+
+## summary
+summary(model_country_dummy)
+
+## icc
+## country variance / (residual + country variance)
+
+## dotplot
+gg_caterpillar(ranef(model_country_dummy, condVar = TRUE), QQ = FALSE, 
+              likeDotplot = TRUE)
+
+## graph with predicted country level min bias
+
+## predict the scores based on the model
+df_rq1 %>%
+  mutate(mdl = predict(model_country_dummy)) %>%
+  ggplot(aes(min_bias, y = mdl, colour = country, group = country)) + 
+  geom_smooth(se = FALSE, method = lm) +
+  theme_bw() +
+  guides(colour = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks = element_blank())
+
+## graph of random effects with line of best fit
+
+## save coefficients
+coefs_model <- coef(model_country_dummy)
+
+## print random effects and best line
+## shown is just dg_third_dummy
+coefs_model$country %>%
+  mutate(country = rownames(coefs_model$country),
+         intercept = `(Intercept)`) %>% 
+  ggplot(aes(x = dg_third_dummy, y = intercept, label = country)) + 
+  geom_point() + 
+  geom_smooth(se = F, method = lm) +
+  geom_label(nudge_y = 0.15, alpha = 0.5) +
+  theme_bw()
+```
+
+The above will be repeated with covariates.
 
 ## Research question 2
 
 For research question 2, we have three main moderators of interest:
-permeability, interpersonal and institutional trust, and
-self-esteem. We will assess the main effect of these moderators across
-three models with a single moderator, as follows:
-
-```{r model-specifications-rq2, eval = FALSE}
-## models of interest
-## FIXME include id? + (1 | id) makes sense if 
-
-## model 2: just self-esteem
-model_2_esteem <- 
-    
-    min_bias ~ self_esteem + (self_esteem | lab / country)
-
-## model 2: just trust
-model_2_trust <- 
-    
-    min_bias ~ trust + (trust | lab / country)
-
-## model 2: just permeability
-model_2_perm <- 
-    
-    min_bias ~ permeability + (permeability | lab / country) 
-
-``` 
-
-Let's add the moderators, using random values or values based on
-previous literature.
+permeability, (in-group and out-group) trust, and
+self-esteem. We compare various models:
 
 ```{r moderators}
-## generate permeability FIXME
+## generate permeability
 permeability_score <- 
     
     rnorm(n_ids_per_country 
-        , mean = 5, sd = 1
+        , mean = -0.002, sd = 1.003 # from Schulz KII data
           ) 
 
 ## generate trust FIXME
@@ -312,130 +329,139 @@ df_rq2 <-
            ) %>%
     ## scale and remove [,1]: https://stackoverflow.com/a/39671848
     mutate(
-        ## self_esteem = as.vector(
-        ##     scale(self_esteem, center = TRUE, scale = FALSE)),
-        ## trust = as.vector(
-        ##     scale(trust, center = TRUE, scale = FALSE)),
-        lab = as.numeric(lab)
-      , country = as.numeric(country)
+        self_esteem = as.vector(
+             scale(self_esteem)),
+        trust = as.vector(
+             scale(trust)),
+        permeability = as.vector(
+             scale(permeability))
   )
-
-df_rq2
 
 ``` 
 
 ```{r run-models}
-## FIXME no REML: https://rinterested.github.io/statistics/mixed_effects_comparison.html
+df_rq2 <-
 
-## self-esteem
-model_esteem <- 
+    df_rq2 %>%
+    select(id, lab, country, 
+          att_min_bias, dg_min_bias_first, dg_min_bias_third,
+          self_esteem, trust, permeability) %>%
+    mutate(att_min_bias = as.vector(scale(att_min_bias)),
+           dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
+           dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
+    pivot_longer(cols = c(contains("min_bias")), 
+                 names_to = "measure",
+                 values_to = "min_bias") %>%
+    mutate(measure = case_when(str_detect(measure, "att") ~ "att",
+                                  str_detect(measure, "first") ~ "dg_first",
+                                  str_detect(measure, "third") ~ "dg_third"
+                                  )) %>%
+    mutate(att_dummy = if_else(measure == "att", 1, 0),
+           dg_first_dummy = if_else(measure == "dg_first", 1, 0),
+           dg_third_dummy = if_else(measure == "dg_third", 1, 0)
+           )
+
+## minimal model
+model_rq2_min <-
     
     lmerTest::lmer(
-        dg_min_bias_first ~ self_esteem + (self_esteem | lab / country),
-        # REML = FALSE,
+        min_bias ~ measure +  
+          (1 | id)  + 
+          (self_esteem + trust + permeability | lab/country),
         data = df_rq2)
 
-## show model
-summary(model_esteem)
-
-## run anova
-anova(model_esteem, ddf = "Kenward-Roger")
-
-## trust
-model_trust <- 
+## model with esteem
+model_rq2_esteem <-
     
     lmerTest::lmer(
-        dg_min_bias_first ~ trust + (trust | lab / country),
-        # REML = FALSE,
+        min_bias ~ measure * self_esteem +  
+          (1 | id)  + 
+          (self_esteem + trust + permeability | lab/country),
         data = df_rq2)
 
-## show model
-summary(model_trust)
-
-## run anova
-anova(model_trust, ddf = "Kenward-Roger")
-
-## permeability
-model_perm <- 
+## model with trust
+model_rq2_esteem_trust <-
     
     lmerTest::lmer(
-        dg_min_bias_first ~ permeability + (permeability | lab / country),
-        # REML = FALSE,
+        min_bias ~ measure * (self_esteem + trust) +  
+          (1 | id)  + 
+          (self_esteem + trust + permeability | lab/country),
         data = df_rq2)
 
-## show model
-summary(model_perm)
+## model permeability
+model_rq2_permeability <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * permeability +  
+          (1 | id)  + 
+          (self_esteem + trust + permeability | lab/country),
+        data = df_rq2)
 
-## run anova
-anova(model_perm, ddf = "Kenward-Roger")
+## maximal model
+model_rq2_max <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * (self_esteem + trust + permeability) +  
+          (1 | id)  + 
+          (self_esteem + trust + permeability | lab/country),
+        data = df_rq2)
 
 ## compare models
-AIC(model_esteem, model_trust, model_perm)
+anova(model_rq2_min, 
+      model_rq2_esteem, 
+      model_rq2_esteem_trust,
+      model_rq2_permeability,
+      model_rq2_max)
 
-## ##################################################
-## ## run to get p values
-## ## this takes time
-## ## run with 1000 simulations then save to csv
+## excplicitly AIC comparison, although above considers it with ML
+AIC(model_rq2_min, 
+    model_rq2_esteem, 
+    model_rq2_esteem_trust,
+    model_rq2_permeability, 
+    model_rq2_max)
+``
 
-## number_simulations <- 100
+``` {r rq2-country-level-effects}
+## select model and run the following
 
-## library(parallel)
+## graph with predicted country level min bias
 
-## n_cores <- detectCores()
-## MyCluster <- makeCluster(rep("localhost", n_cores - 1))
+## predict the scores based on the model
+df_rq2 %>%
+  mutate(mdl = predict(model_rq2_permeability)) %>%
+  ggplot(aes(permeability, y = mdl, colour = country, group = country)) + 
+  geom_smooth(se = FALSE, method = lm) +
+  theme_bw() +
+  guides(colour = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks = element_blank())
 
-## model_full_pb <- afex::mixed(
-##                            dg_min_bias ~ self_esteem + (self_esteem | lab / country),
-##                            data = df,
-##                            type = 3,
-##                            method = "PB",
-##                            contrasts = c("contr.sum"),
-##                            lmerControl(optimizer = "optimx",
-##                                        optCtrl = list(method = "nlminb")),
-##                            cl = MyCluster,
-##                            args_test = list(nsim = number_simulations, cl = MyCluster))
+## graph of random effects with line of best fit
 
-## stopCluster(MyCluster) # to stop R running 
+## save coefficients
+coefs_model <- coef(model_rq2_permeability)
 
-## anova(model_full_pb)
+## print random effects and best line
+## shown is permeability
+coefs_model$country %>%
+  mutate(country = rownames(coefs_model$country),
+         intercept = `(Intercept)`) %>% 
+  ggplot(aes(x = permeability, y = intercept, label = country)) + 
+  geom_point() + 
+  geom_smooth(se = F, method = lm) +
+  geom_label(nudge_y = 0.001, alpha = 0.5) +
+  theme_bw()
 
-## anova_order <- anova(model_full_pb) %>% tidy %>%
-##     rename(df = Chi.Df,
-##            p_value_chisq = p.value,
-##            p_value_pb = Pr..PB.)
 
-## ## write_csv(anova_order, path = "./../data/output_anova_{model}.csv")
 
 ``` 
 
-The above will be repeated for minimal bias in both the third-party
-dictator game and attitudes.
+The above will be repeated with covariates.
 
 ## Research question 3
 
 For research question 3, we assess whether real-world bias (towards
-the nation and/or family) is predicted by minimal group bias. We will
-assess the main effect of minimal group bias on real-world bias, as
-follows:
-
-```{r model-specifications-rq3, eval = FALSE}
-## model 3: real-world
-model_3 <- 
-    
-    real_bias ~ min_bias * group_type + (min_bias + group_type | id) + (min_bias | lab / country)
-
-## alternatively, two separate models
-
-## ## model 3: just nation
-## model_3_nat <- 
-    
-##     nat_bias ~ min_bias + (min_bias | lab / country)
-
-## ## model 3: just family
-## model_3_fam <- 
-    
-    ## nat_bias ~ min_bias + (min_bias | lab / country)
-``` 
+the nation and/or family) is predicted by minimal group bias. 
 
 Let's add measures of national and family bias.
 
@@ -514,17 +540,50 @@ df_rq3 <-
     select(id, lab, country, att_min_bias, att_nat_bias, att_fam_bias) %>%
     pivot_longer(cols = c(att_nat_bias, att_fam_bias), # c(starts_with("att")), 
                  names_to = "group_type",
-                 values_to = "real_bias") %>%
+                 values_to = "att_real_bias") %>%
     mutate(group_type = case_when(str_detect(group_type, "nat") ~ "nat",
                                   str_detect(group_type, "fam") ~ "fam"
                                   ))
 
+# ## create longdataframe
+# df_rq1 <-
+# 
+#     fake_data %>%
+#     select(id, lab, country, 
+#            att_min_bias, dg_min_bias_first, dg_min_bias_third,
+#            att_nat_bias, dg_nat_bias_first, dg_nat_bias_third,
+#            att_fam_bias, dg_fam_bias_first, dg_fam_bias_third) %>%
+#     mutate(att_min_bias = as.vector(scale(att_min_bias)),
+#            dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
+#            dg_min_bias_third = as.vector(scale(dg_min_bias_third)),
+#            att_nat_bias = as.vector(scale(att_nat_bias)),
+#            dg_nat_bias_first = as.vector(scale(dg_nat_bias_first)),
+#            dg_nat_bias_third = as.vector(scale(dg_nat_bias_third)),
+#            att_fam_bias = as.vector(scale(att_fam_bias)),
+#            dg_fam_bias_first = as.vector(scale(dg_fam_bias_first)),
+#            dg_fam_bias_third = as.vector(scale(dg_fam_bias_third)),
+#            ) %>% 
+#     pivot_longer(cols = c(contains("_")), 
+#                  names_to = "measure",
+#                  values_to = "measure_grou") %>% View
+#   
+#     pivot_longer(cols = c(contains("nat|fam")), 
+#                  names_to = "group_type",
+#                  values_to = "real_bias") 
+
+df_rq3
+```
+
+To avoid three-way interactions, we model each measures separately. We demonstrate with attitudes.
+
+``` {r rq3}
 ## real-world
 model_real_world <- 
 
-    lmerTest::lmer(real_bias ~ att_min_bias * group_type + 
-                       (att_min_bias + group_type | id)  + 
-                       (att_min_bias + group_type  | lab / country),
+    lmerTest::lmer(att_real_bias ~ att_min_bias * group_type + 
+                       (1 | id)  + 
+                       (att_min_bias | lab:country) +
+                       (att_min_bias | country),
                    data = df_rq3)
 
 ## summary
@@ -534,6 +593,35 @@ summary(model_real_world)
 ## anova(model_real_world, ddf = "Kenward-Roger")
 
 ``` 
+
+```{r plot-rq3}
+
+model_coefs <- 
+  
+  coef(model_real_world)$country %>% 
+  rename(intercept = `(Intercept)`, slope = att_min_bias) %>% 
+  rownames_to_column("country")
+
+model_coefs
+
+df_rq3_rand <- left_join(df_rq3, model_coefs, by = "country")
+
+ggplot(data = df_rq3_rand, 
+       mapping = aes(x = att_min_bias, 
+                     y = att_real_bias, 
+                     colour = lab)
+       ) +
+  geom_point(na.rm = T, alpha = 0.5) +
+  geom_abline(aes(intercept = intercept, 
+                  slope = slope,
+                  colour = lab
+                  ),
+              size = 1.5
+              ) +
+  facet_wrap(. ~ group_type) +
+  guides(colour = "none") +
+  theme_bw()
+```
 
 The above will be repeated for minimal bias in both the first- and third-party
 dictator games.
