@@ -291,8 +291,10 @@ The above will be repeated with covariates.
 
 ## Research question 2
 
-For research question 2, we have three main moderators of interest:
-permeability, (in-group and out-group) trust, and
+### Individual level 
+
+For the individual level analysis of research question 2, we have three main
+moderators of interest: permeability, (in-group and out-group) trust, and
 self-esteem. We compare various models:
 
 ```{r moderators}
@@ -419,9 +421,9 @@ AIC(model_rq2_min,
     model_rq2_esteem_trust,
     model_rq2_permeability, 
     model_rq2_max)
-``
+```
 
-``` {r rq2-country-level-effects}
+``` {r, rq2-country-level-effects}
 ## select model and run the following
 
 ## graph with predicted country level min bias
@@ -457,6 +459,47 @@ coefs_model$country %>%
 ``` 
 
 The above will be repeated with covariates.
+
+### Country level 
+
+We see if country-level predictors (Hofstede's individualism, the strength of family ties, in-group--out-group trust, and the Kinship Intensity Indicator), are significantly correlated with the countries' MGE means measures. For example, with KII:
+
+```{r, rq2-country}
+## read in country level indicators
+country_level_indicators <-
+  
+  read_csv("./country-level-indicators.csv")
+
+## save coefficients
+coefs_model <- coef(model_country_dummy)
+
+## save intercepts
+country_intercept <-
+  
+  coefs_model$country %>%
+  mutate(country = rownames(coefs_model$country),
+         intercept = `(Intercept)`)
+
+## print random effects and best line
+## shown is just dg_third_dummy
+joined <- 
+  
+  left_join(country_intercept,
+    country_level_indicators,
+    by = "country")
+
+## correlation
+cor.test(joined$KII, joined$intercept)
+
+## plot
+joined %>%
+  ggplot(aes(x = KII, y = intercept, label = country)) + 
+  geom_point() + 
+  geom_smooth(se = F, method = lm) +
+  geom_label(nudge_y = 0.001, alpha = 0.5) +
+  theme_bw()
+
+```
 
 ## Research question 3
 
@@ -582,8 +625,8 @@ model_real_world <-
 
     lmerTest::lmer(att_real_bias ~ att_min_bias * group_type + 
                        (1 | id)  + 
-                       (att_min_bias | lab:country) +
-                       (att_min_bias | country),
+                       (att_min_bias + group_type | lab:country) +
+                       (att_min_bias + group_type | country),
                    data = df_rq3)
 
 ## summary
