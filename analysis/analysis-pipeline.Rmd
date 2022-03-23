@@ -45,165 +45,48 @@ set.seed(1970) # to reproduce analysis
 sessionInfo() # session info
 ``` 
 
-## Generate artificial data
+## Input artificial data
 
-We create an artificial dataset that contains the relevant variables.
-Note the dataset here will include the variables used in the main
-analyses, not all collected variables. Furthermore, the dataset
-resembles the processed data, not the raw data from Qualtrics.
+We created an artificial dataset that contains the relevant variables in a separate script, which we can call here and in other files. Note the dataset here will include the variables used in the main analyses, not all collected variables. Furthermore, the dataset resembles the processed data, not the raw data from Qualtrics.
 
-First let's generate the basic characteristics: id, lab, country,
-region.
+```{r, source-simulated-data}
+## loads the simulated data, and wrangled dataframes for each RQ
+source("./data-simulation.R")
 
-```{r basic-characteristics}
-## arbitrarily set the number of labs to the same as PSACR002
-n_countries <- 20
-n_labs <- n_countries + 5
-## create number of subjects per country
-n_ids_per_country <- 100
+## peek at data
+head(fake_data)
+```
 
-## create subject ids
-ids <- (1:n_ids_per_country) # start with n subjects per country
-
-## create list of lab names
-lab_names <-
-    
-    seq(1:n_labs) %>%
-    tibble() %>%
-    ## mutate(labs = if_else(. < 10, paste0("lab0", .), paste0("lab", .))) %>%
-    pull()
-
-## create list of country names
-country_names <-
-    
-    ## seq(1:n_countries) %>%
-    letters[seq( from = 1, to = n_countries )] %>%
-    tibble() %>%
-    ## mutate(labs = if_else(. < 10, paste0("country0", .), paste0("country", .))) %>%
-    pull()
-                   
-## df with labs randomly matched to a country
-## with 15 countries with 2 labs
-## FIXME we'll want 5? USA/Italy/China
-df_lab_country <-
-    
-    tibble(
-        lab_id = lab_names,
-        country = rep_len(country_names, n_labs)
-    ) %>%
-    arrange(country) %>%
-    unite(lab_country, country, lab_id) %>%
-    pull()
-
-## create dataframe
-fake_data <-
-    
-    expand.grid(id = ids, lab = df_lab_country) %>%
-    tibble() %>%
-    separate(col = lab, into = c("country", "lab")) %>%
-    select(id, lab, country) %>%
-    mutate(id = c(1:nrow(.)))
-    ## FIXME done later  %>%
-    ## mutate(country = as.numeric(country),
-    ##        lab = as.numeric(lab))
-
-## count total number of labs and countries
-n_labs_countries <-  
-    
-    nrow(fake_data)/n_ids_per_country
-``` 
-
-Now let's create the minimal group dependent measures, based on the
+The (minimal group) dependent measures are based on the
 three dictator games (in-group--self, out-group--self,
 in-group--out-group) and the average attitude towards in-group and
-towards out-group. The three minimal group measures are: difference
+towards out-group. The resultant three (minimal group) measures are: difference
 between in-group and out-group attitudes (att_bias), difference between
 in-group–self and out-group–self decisions in the dictator game (dg_first_bias), and
 the decision in the in-group–out-group dictator game (dg_third_bias).
 
-```{r outcomes}
-## number of participants
-n_total <- nrow(fake_data)
-
-## add outcomes
-fake_data <-
-    
-    fake_data %>%
-    mutate(
-        dg_min_in_self = 
-            round(
-                rtruncnorm(n_total, 
-                           mean = 3, sd = 3, min = 0, max = 10), 
-                  0),
-        dg_min_out_self = 
-            round(
-                rtruncnorm(n_total, 
-                           mean = 1, sd = 3, min = 0, max = 10), 
-                0),
-        dg_min_in_out = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 4, sd = 3, min = 0, max = 10), 
-                0),
-        att_min_in = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 6, sd = 3.5, min = 1, max = 7), 
-                1),
-        att_min_out = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 2, sd = 3.5, min = 1, max = 7), 
-                1)
-    ) %>%
-    mutate(dg_min_bias_first = dg_min_in_self - dg_min_out_self,
-           dg_min_bias_third = dg_min_in_out,
-           att_min_bias = att_min_in - att_min_out)
-``` 
-
 ## Research question 1
 
-Let's adjust the dataset accordingly, and run some summary statistics (of att_bias).
-We outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect. 
+Let's run some summary statistics (of att_bias).
+We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
 
 ```{r, rq1-manipulation}
-## set df
-df_rq1 <- fake_data
+## peek at dataframe
+head(df_rq1)
 
-## distribution of outcome by country
-df_rq1 %>% 
+## distribution of one outcome by country
+fake_data %>% 
   ggplot(aes(att_min_bias)) + 
   geom_density() +
   facet_wrap(. ~ country)
 
-## descriptives of outcome
-df_rq1 %>% 
+## descriptives of one outcome
+fake_data %>% 
   group_by(country) %>% 
   summarise(mean = mean(att_min_bias, na.rm = TRUE), 
             sd = sd(att_min_bias, na.rm = TRUE)) %>% 
   mutate_if(is.numeric, ~round(., 2)) %>% 
   print(n = n_countries)
-
-## create longdataframe
-df_rq1 <-
-
-    fake_data %>%
-    select(id, lab, country, att_min_bias, dg_min_bias_first, dg_min_bias_third) %>%
-    mutate(att_min_bias = as.vector(scale(att_min_bias)),
-           dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
-           dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
-    pivot_longer(cols = c(contains("min_bias")), 
-                 names_to = "measure",
-                 values_to = "min_bias") %>%
-    mutate(measure = case_when(str_detect(measure, "att") ~ "att",
-                                  str_detect(measure, "first") ~ "dg_first",
-                                  str_detect(measure, "third") ~ "dg_third"
-                                  )) %>%
-    mutate(att_dummy = if_else(measure == "att", 1, 0),
-           dg_first_dummy = if_else(measure == "dg_first", 1, 0),
-           dg_third_dummy = if_else(measure == "dg_third", 1, 0)
-           )
-  
 ```
 
 We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
@@ -297,72 +180,12 @@ For the individual level analysis of research question 2, we have three main
 moderators of interest: permeability, (in-group and out-group) trust, and
 self-esteem. We compare various models:
 
-```{r moderators}
-## generate permeability
-permeability_score <- 
-    
-    rnorm(n_ids_per_country 
-        , mean = -0.002, sd = 1.003 # from Schulz KII data
-          ) 
-
-## generate trust FIXME
-trust_score <- 
-    
-    rnorm(n_ids_per_country 
-        , mean = 5, sd = 1
-          ) 
-
-## generate self-esteem
-self_esteem_score <- 
-    
-    rnorm(n_ids_per_country 
-        , mean = 3.5, sd = 1.1 # values: Robins-et-al_2001
-        ## , mean = 30.85, sd = 4.82 # values: Schmitt-Alik_2005
-          ) 
-
-## add to artificial data frame
-## each repeated n times for each lab/country
-df_rq2 <-
-
-    fake_data %>%
-    mutate(trust = rep(trust_score, n_labs_countries),
-           self_esteem = rep(self_esteem_score, n_labs_countries),
-           permeability = rep(permeability_score, n_labs_countries)
-           ) %>%
-    ## scale and remove [,1]: https://stackoverflow.com/a/39671848
-    mutate(
-        self_esteem = as.vector(
-             scale(self_esteem)),
-        trust = as.vector(
-             scale(trust)),
-        permeability = as.vector(
-             scale(permeability))
-  )
-
+```{r df-rq2}
+## peek at dataframe
+head(df_rq2)
 ``` 
 
-```{r run-models}
-df_rq2 <-
-
-    df_rq2 %>%
-    select(id, lab, country, 
-          att_min_bias, dg_min_bias_first, dg_min_bias_third,
-          self_esteem, trust, permeability) %>%
-    mutate(att_min_bias = as.vector(scale(att_min_bias)),
-           dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
-           dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
-    pivot_longer(cols = c(contains("min_bias")), 
-                 names_to = "measure",
-                 values_to = "min_bias") %>%
-    mutate(measure = case_when(str_detect(measure, "att") ~ "att",
-                                  str_detect(measure, "first") ~ "dg_first",
-                                  str_detect(measure, "third") ~ "dg_third"
-                                  )) %>%
-    mutate(att_dummy = if_else(measure == "att", 1, 0),
-           dg_first_dummy = if_else(measure == "dg_first", 1, 0),
-           dg_third_dummy = if_else(measure == "dg_third", 1, 0)
-           )
-
+```{r rq2-models}
 ## minimal model
 model_rq2_min <-
     
@@ -453,9 +276,6 @@ coefs_model$country %>%
   geom_smooth(se = F, method = lm) +
   geom_label(nudge_y = 0.001, alpha = 0.5) +
   theme_bw()
-
-
-
 ``` 
 
 The above will be repeated with covariates.
@@ -506,118 +326,12 @@ joined %>%
 For research question 3, we assess whether real-world bias (towards
 the nation and/or family) is predicted by minimal group bias. 
 
-Let's add measures of national and family bias.
-
 ```{r measures-real-world-bias}
-## add real-world measures
-fake_data <-
-    
-    fake_data %>%
-    ## nation
-    mutate(
-        dg_nat_in_self = 
-            round(
-                rtruncnorm(n_total, 
-                           mean = 3, sd = 3, min = 0, max = 10), 
-                  0),
-        dg_nat_out_self = 
-            round(
-                rtruncnorm(n_total, 
-                           mean = 1, sd = 3, min = 0, max = 10), 
-                0),
-        dg_nat_in_out = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 4, sd = 3, min = 0, max = 10), 
-                0),
-        att_nat_in = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 5, sd = 3, min = 1, max = 7), 
-                0),
-        att_nat_out = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 5, sd = 3, min = 1, max = 7), 
-                0)
-    ) %>%
-    mutate(dg_nat_bias_first = dg_nat_in_self - dg_nat_out_self,
-           dg_nat_bias_third = dg_nat_in_out,
-           att_nat_bias = att_nat_in - att_min_out) %>%
-    ## family        
-    mutate(
-        dg_fam_in_self = 
-            round(
-                rtruncnorm(n_total, 
-                           mean = 3, sd = 3, min = 0, max = 10), 
-                0),
-        dg_fam_out_self = 
-            round(
-                rtruncnorm(n_total, 
-                           mean = 1, sd = 3, min = 0, max = 10), 
-                0),
-        dg_fam_in_out = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 4, sd = 3, min = 0, max = 10), 
-                0),
-        att_fam_in = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 5, sd = 3, min = 1, max = 7), 
-                0),
-        att_fam_out = 
-                round(
-                rtruncnorm(n_total, 
-                           mean = 5, sd = 3, min = 1, max = 7), 
-                0)
-    ) %>%
-    mutate(dg_fam_bias_first = dg_fam_in_self - dg_fam_out_self,
-           dg_fam_bias_third = dg_fam_in_out,
-           att_fam_bias = att_fam_in - att_min_out)
-    
-## create long version of dataframe
-df_rq3 <-
-    
-    fake_data %>%
-    select(id, lab, country, att_min_bias, att_nat_bias, att_fam_bias) %>%
-    pivot_longer(cols = c(att_nat_bias, att_fam_bias), # c(starts_with("att")), 
-                 names_to = "group_type",
-                 values_to = "att_real_bias") %>%
-    mutate(group_type = case_when(str_detect(group_type, "nat") ~ "nat",
-                                  str_detect(group_type, "fam") ~ "fam"
-                                  ))
-
-# ## create longdataframe
-# df_rq1 <-
-# 
-#     fake_data %>%
-#     select(id, lab, country, 
-#            att_min_bias, dg_min_bias_first, dg_min_bias_third,
-#            att_nat_bias, dg_nat_bias_first, dg_nat_bias_third,
-#            att_fam_bias, dg_fam_bias_first, dg_fam_bias_third) %>%
-#     mutate(att_min_bias = as.vector(scale(att_min_bias)),
-#            dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
-#            dg_min_bias_third = as.vector(scale(dg_min_bias_third)),
-#            att_nat_bias = as.vector(scale(att_nat_bias)),
-#            dg_nat_bias_first = as.vector(scale(dg_nat_bias_first)),
-#            dg_nat_bias_third = as.vector(scale(dg_nat_bias_third)),
-#            att_fam_bias = as.vector(scale(att_fam_bias)),
-#            dg_fam_bias_first = as.vector(scale(dg_fam_bias_first)),
-#            dg_fam_bias_third = as.vector(scale(dg_fam_bias_third)),
-#            ) %>% 
-#     pivot_longer(cols = c(contains("_")), 
-#                  names_to = "measure",
-#                  values_to = "measure_grou") %>% View
-#   
-#     pivot_longer(cols = c(contains("nat|fam")), 
-#                  names_to = "group_type",
-#                  values_to = "real_bias") 
-
-df_rq3
+## peek at dataframe
+head(df_rq3)
 ```
 
-To avoid three-way interactions, we model each measures separately. We demonstrate with attitudes.
+To avoid three-way interactions, we model each measure separately. We demonstrate the analysis with the attitude measures.
 
 ``` {r rq3}
 ## real-world
