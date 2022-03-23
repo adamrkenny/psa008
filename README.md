@@ -10,17 +10,22 @@ webpage](https://psysciacc.org/psa-008-project-information/).
 
 The Rmd script
  [analysis-pipeline.Rmd](./analysis/analysis-pipeline.Rmd) takes the
- artificial data and runs through the main analyses described in the
- manuscript. It does not include the power analysis, which is in a
- separate document. The purpose of the analysis pipeline is to
- troubleshoot models --- some errors might be an artifact of the
- artificial data.
+ artificial data created in
+ [data-simulation.R](./analysis/data-simulation.R) and runs through
+ the main analyses described in the manuscript. The purpose of the
+ analysis pipeline is to troubleshoot models --- some errors might be
+ an artifact of the artificial data.
 
-Most users will find it easiest to open the Rmd script in rstudio and
-knit the file. This will compile a html file with all the text, code
-chunks, and output by default. It might take a couple of minutes,
-especially if packages have to be installed (which should be done
-automatically if necessary upon compilation).
+The Rmd script [power-analysis.Rmd](./analysis/power-analysis.Rmd)
+contains the power analysis, using the artificial data created in
+[data-simulation.R](./analysis/data-simulation.R) and the models
+specified in the analysis pipeline.
+
+Most users will find it easiest to open the Rmd script in rstudio, and
+possibly knit the file. This will compile a html file with all the
+text, code chunks, and output by default. It might take a couple of
+minutes, especially if packages have to be installed (which should be
+done automatically if necessary upon compilation).
 
 ## about [matching](./matching) ##
 
