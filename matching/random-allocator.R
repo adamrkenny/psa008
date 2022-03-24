@@ -18,26 +18,18 @@ set.seed(1970) # FIXME to remove, just to get the same result on first run
 
 ## set parameters
 n_length <- 1 # 10
-## nationalities use language codes from qualtrics:
-## https://www.qualtrics.com/support/survey-platform/survey-module/survey-tools/translate-survey/#AvailableLanguageCodes
-focal_nationality <- "EN" # "american"
-list_nationalities <- c("EN", "EN-GB", "other")
+focal_nationality <- "American"
+list_nationalities <- c("American", "British", "other")
 list_min_groups <- c("J", "H", "M", "K", "L", "N", "S", "P")
 default_donation <- 10 # represents half the points
+
+## NB if necessary, nationalities could use language codes from qualtrics:
+## https://www.qualtrics.com/support/survey-platform/survey-module/survey-tools/translate-survey/#AvailableLanguageCodes
+
 
 ## create tibble
 random_allocator <-
 
-    ## tibble(
-    ##     id = c(1:n_length),
-    ##     type = c(rep("national", 2), rep("minimal", 8)),
-    ##     group = c(focal_nationality,
-    ##               paste0("non-", focal_nationality),
-    ##               list_min_groups),
-    ##     dg_in_self = rep(default_donation, n_length),
-    ##     dg_out_self = rep(default_donation, n_length),
-    ##     dg_in_out = rep(default_donation, n_length)
-    ## )
     tibble(
         minimal = sample(list_min_groups, 1),
         nationality = sample(list_nationalities, 1),
@@ -82,7 +74,7 @@ df <-
            dg_nat_out_self = as.numeric(Q188_1_1),
            dg_nat_in_out = as.numeric(Q189_1)) %>%
     ## add nationality FIXME for pilot, all US
-    mutate(nationality = "EN") %>%
+    mutate(nationality = "American") %>%
     select(nationality, ends_with("_q"), starts_with("dg_"))
 
 ## FIXME decided whether identifier (e.g. Response ID) should be included (for traceability)
