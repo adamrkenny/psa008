@@ -97,8 +97,7 @@ model_country_all <-
 
     lmerTest::lmer(min_bias ~ measure + 
                        (1 | id)  + 
-                       (measure | lab:country)  + 
-                       (measure | country),
+                       (measure | country/lab),
                    data = df_rq1
                    ## , contrasts = list(measure = "contr.sum")
                    )
@@ -127,8 +126,7 @@ model_country_dummy <-
 
     lmerTest::lmer(min_bias ~ att_dummy + dg_first_dummy + 
                        (1 | id)  + 
-                       (att_dummy + dg_first_dummy + dg_third_dummy | lab:country) + 
-                       (att_dummy + dg_first_dummy + dg_third_dummy | country),
+                       (att_dummy + dg_first_dummy + dg_third_dummy | country/lab),
                    data = df_rq1)
 
 ## summary
@@ -192,7 +190,7 @@ model_rq2_min <-
     lmerTest::lmer(
         min_bias ~ measure +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | lab/country),
+          (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
 ## model with esteem
@@ -201,7 +199,7 @@ model_rq2_esteem <-
     lmerTest::lmer(
         min_bias ~ measure * self_esteem +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | lab/country),
+          (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
 ## model with trust
@@ -210,7 +208,7 @@ model_rq2_esteem_trust <-
     lmerTest::lmer(
         min_bias ~ measure * (self_esteem + trust) +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | lab/country),
+          (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
 ## model permeability
@@ -219,7 +217,7 @@ model_rq2_permeability <-
     lmerTest::lmer(
         min_bias ~ measure * permeability +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | lab/country),
+          (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
 ## maximal model
@@ -228,7 +226,7 @@ model_rq2_max <-
     lmerTest::lmer(
         min_bias ~ measure * (self_esteem + trust + permeability) +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | lab/country),
+          (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
 ## compare models
@@ -339,8 +337,7 @@ model_real_world <-
 
     lmerTest::lmer(att_real_bias ~ att_min_bias * group_type + 
                        (1 | id)  + 
-                       (att_min_bias + group_type | lab:country) +
-                       (att_min_bias + group_type | country),
+                       (att_min_bias + group_type | country/lab),
                    data = df_rq3)
 
 ## summary
