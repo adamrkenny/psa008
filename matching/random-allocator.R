@@ -113,7 +113,7 @@ random_allocator <-
 ## alternatively, manually place csv file in ./data
 df <-
     
-    read_csv("../data/PSA-MGP Prolific pilot (US + UK)_March 30, 2022_02.11.csv") %>%
+    read_csv("../data/PSA-MGP Prolific pilot (US + UK)_April 4, 2022_03.49.csv") %>%
     ## remove first lines which are qualtrics bumf
     slice(-(1:3)) %>%
     ## create date to filter from 2022-04-04
