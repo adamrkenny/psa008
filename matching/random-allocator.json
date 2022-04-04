@@ -1,12 +1,12 @@
 [
   {
-    "minimal": "N",
-    "nationality": "British",
+    "minimal": "M",
+    "nationality": "American",
     "dg_min_in_self": 10,
-    "dg_min_out_self": 10,
-    "dg_min_in_out": 10,
-    "dg_nat_in_self": 10,
-    "dg_nat_out_self": 10,
+    "dg_min_out_self": 15,
+    "dg_min_in_out": 15,
+    "dg_nat_in_self": 16,
+    "dg_nat_out_self": 15,
     "dg_nat_in_out": 10
   }
 ]
