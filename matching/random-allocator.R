@@ -113,13 +113,13 @@ random_allocator <-
 ## alternatively, manually place csv file in ./data
 df <-
     
-    read_csv("../data/PSA-MGP Prolific pilot (US + UK)_April 4, 2022_03.49.csv") %>%
+    read_csv("../data/PSA-MGP Prolific pilot (US + UK)_April 4, 2022_08.01.csv") %>%
     ## remove first lines which are qualtrics bumf
     slice(-(1:3)) %>%
     ## create date to filter from 2022-04-04
     separate(StartDate, c("start_date", "start_time"), sep = " ") %>%
     mutate(start_date = lubridate::ymd(start_date)) %>%
-    filter(start_date > "2022-04-03")
+    filter(start_date > "2022-04-03") %>%
     ## allocation decisions
     select(
         ## info on nationality group
