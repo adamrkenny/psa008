@@ -27,6 +27,14 @@ text, code chunks, and output by default. It might take a couple of
 minutes, especially if packages have to be installed (which should be
 done automatically if necessary upon compilation).
 
+## about [data](./data) ##
+
+The csv file
+[data-pilot-processed.csv](./data/data-pilot-processed.csv) contains
+processed pilot data. Data were collected 04 April 2022 on Prolific,
+with a sample from the United Kingdom (n = 200) and the United States
+of America (n = 200).
+
 ## about [matching](./matching) ##
 
 The R script [random-allocator.R](./matching/random-allocator.R) takes
