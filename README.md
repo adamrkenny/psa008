@@ -37,6 +37,20 @@ processed pilot data. Data were collected 04 April 2022 on Prolific
 associated codebook, as the csv file
 [codebook-data-pilot-processed.csv](./data/codebook-data-pilot-processed.csv).
 
+The csv file [exchange-rates.csv](./data/exchange-rates.csv) contains
+purchasing power adjusted exchange rates for countries across the
+world. We use this to pay participants from different countries an
+equivalent amount. The specific indicator is the "PPP conversion
+factor, GDP (LCU per international $)", which according to the
+original data source: "Purchasing power parity (PPP) conversion factor
+is a spatial price deflator and currency converter that controls for
+price level differences between countries, thereby allowing volume
+comparisons of gross domestic product (GDP) and its expenditure
+components. This conversion factor is for GDP." This file is a
+modified version of the one shared among the PSA team on 2022-03-24,
+whose last updated date was 2022-02-15. Data can be obtained from
+[https://data.worldbank.org/indicator/PA.NUS.PPP](https://data.worldbank.org/indicator/PA.NUS.PPP).
+
 ## about [matching](./matching) ##
 
 The R script [random-allocator.R](./matching/random-allocator.R) takes
