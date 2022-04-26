@@ -29,18 +29,20 @@ done automatically if necessary upon compilation).
 
 ## about [data](./data) ##
 
-The csv file [data-pilot-raw.csv](./data/data-pilot-raw.csv) contains
-raw pilot data. Specifically, this is the data downloaded from
-Qualtrics after the pilot study was completed, minus columns with
-identifying information (e.g. IP address recorded by Qualtrics) and
-rows corresponding to troubleshooting attempts by the author(s) before
-the pilot study was launched. The csv file
-[data-pilot-processed.csv](./data/data-pilot-processed.csv) contains
-processed pilot data. Data were collected 04 April 2022 on Prolific
+Pilot data were collected 04 April 2022 on Prolific
 [prolific.co](www.prolific.co), with a sample from the United Kingdom
-(n = 200) and the United States of America (n = 200). There is an
-associated codebook, as the csv file
+(n = 200) and the United States of America (n = 200). The csv file
+[data-pilot-raw.csv](./data/data-pilot-raw.csv) contains raw pilot
+data. Specifically, this is the data downloaded from Qualtrics after
+the pilot study was completed, minus columns with identifying
+information (e.g. IP address recorded by Qualtrics) and rows
+corresponding to troubleshooting attempts by the author(s) before the
+pilot study was launched. The csv file
+[data-pilot-processed.csv](./data/data-pilot-processed.csv) contains
+processed pilot data. There is an associated codebook, as the csv file
 [codebook-data-pilot-processed.csv](./data/codebook-data-pilot-processed.csv).
+The code for processing the raw data is in
+[wrangle-pilot-data.R](./analysis/wrangle-pilot-data.R).
 
 The csv file [exchange-rates.csv](./data/exchange-rates.csv) contains
 purchasing power adjusted exchange rates for countries across the
