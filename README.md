@@ -31,9 +31,11 @@ done automatically if necessary upon compilation).
 
 The csv file
 [data-pilot-processed.csv](./data/data-pilot-processed.csv) contains
-processed pilot data. Data were collected 04 April 2022 on Prolific,
-with a sample from the United Kingdom (n = 200) and the United States
-of America (n = 200).
+processed pilot data. Data were collected 04 April 2022 on Prolific
+[prolific.co](www.prolific.co), with a sample from the United Kingdom
+(n = 200) and the United States of America (n = 200). There is an
+associated codebook, as the csv file
+[codebook-data-pilot-processed.csv](./data/codebook-data-pilot-processed.csv).
 
 ## about [matching](./matching) ##
 
