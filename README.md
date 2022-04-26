@@ -29,7 +29,12 @@ done automatically if necessary upon compilation).
 
 ## about [data](./data) ##
 
-The csv file
+The csv file [data-pilot-raw.csv](./data/data-pilot-raw.csv) contains
+raw pilot data. Specifically, this is the data downloaded from
+Qualtrics after the pilot study was completed, minus columns with
+identifying information (e.g. IP address recorded by Qualtrics) and
+rows corresponding to troubleshooting attempts by the author(s) before
+the pilot study was launched. The csv file
 [data-pilot-processed.csv](./data/data-pilot-processed.csv) contains
 processed pilot data. Data were collected 04 April 2022 on Prolific
 [prolific.co](www.prolific.co), with a sample from the United Kingdom
