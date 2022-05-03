@@ -68,7 +68,6 @@ the decision in the in-group–out-group dictator game (dg_third_bias).
 ## Research question 1
 
 Let's run some summary statistics (of att_bias).
-We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
 
 ```{r, rq1-manipulation}
 ## peek at dataframe
@@ -88,6 +87,8 @@ fake_data %>%
   mutate_if(is.numeric, ~round(., 2)) %>% 
   print(n = n_countries)
 ```
+
+We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
 
 We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
 
@@ -168,7 +169,9 @@ coefs_model$country %>%
   theme_bw()
 ```
 
-The above will be repeated with covariates.
+The above will be repeated with covariates, as follows
+
+
 
 ## Research question 2
 
@@ -184,7 +187,7 @@ head(df_rq2)
 ``` 
 
 ```{r rq2-models}
-## minimal model
+## minimal model (model 1)
 model_rq2_min <-
     
     lmerTest::lmer(
@@ -193,7 +196,7 @@ model_rq2_min <-
           (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
-## model with esteem
+## model with esteem (model 2)
 model_rq2_esteem <-
     
     lmerTest::lmer(
@@ -202,16 +205,16 @@ model_rq2_esteem <-
           (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
-## model with trust
-model_rq2_esteem_trust <-
+## model with trust (model 3)
+model_rq2_trust <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust) +  
+        min_bias ~ measure * trust +  
           (1 | id)  + 
           (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
-## model permeability
+## model permeability (model 4)
 model_rq2_permeability <-
     
     lmerTest::lmer(
@@ -220,7 +223,16 @@ model_rq2_permeability <-
           (self_esteem + trust + permeability | country/lab),
         data = df_rq2)
 
-## maximal model
+## model with esteem plus trust (model 5)
+model_rq2_esteem_trust <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * (self_esteem + trust) +  
+          (1 | id)  + 
+          (self_esteem + trust + permeability | country/lab),
+        data = df_rq2)
+
+## maximal model (model 6)
 model_rq2_max <-
     
     lmerTest::lmer(
@@ -232,16 +244,21 @@ model_rq2_max <-
 ## compare models
 anova(model_rq2_min, 
       model_rq2_esteem, 
-      model_rq2_esteem_trust,
+      model_rq2_trust,
       model_rq2_permeability,
+      model_rq2_esteem_trust,
       model_rq2_max)
 
 ## excplicitly AIC comparison, although above considers it with ML
 AIC(model_rq2_min, 
     model_rq2_esteem, 
-    model_rq2_esteem_trust,
+    model_rq2_trust, 
     model_rq2_permeability, 
+    model_rq2_esteem_trust,
     model_rq2_max)
+
+## NB if the anova() and AIC() comparisons suggest different model order
+## then give preferene to results of anova()
 ```
 
 ``` {r, rq2-country-level-effects}
@@ -280,7 +297,7 @@ The above will be repeated with covariates.
 
 ### Country level 
 
-We see if country-level predictors (Hofstede's individualism, the strength of family ties, in-group--out-group trust, and the Kinship Intensity Indicator), are significantly correlated with the countries' MGE means measures. For example, with KII:
+We see if country-level predictors (Hofstede's individualism, the strength of family ties, in-group--out-group trust, and the Kinship Intensity Indicator) are significantly correlated with the countries' MGE means measures.
 
 ```{r, rq2-country}
 ## read in country level indicators
@@ -307,16 +324,29 @@ joined <-
     by = "country")
 
 ## correlation
-cor.test(joined$KII, joined$intercept)
+cor.test(joined$KII, joined$intercept) # KII
+cor.test(joined$Hofstede, joined$intercept) # Hofstede
+cor.test(joined$trust, joined$intercept) # trust
 
-## plot
+## plot (all three measures)
 joined %>%
-  ggplot(aes(x = KII, y = intercept, label = country)) + 
+  pivot_longer(cols = c("KII", "Hofstede", "trust"),
+               names_to = "country_measure", 
+               values_to = "value") %>%
+  ggplot(aes(x = value, y = intercept, label = country)) + 
   geom_point() + 
   geom_smooth(se = F, method = lm) +
   geom_label(nudge_y = 0.001, alpha = 0.5) +
+  facet_wrap(. ~ country_measure) +
   theme_bw()
 
+## plot (example with single measure)
+# joined %>%
+#   ggplot(aes(x = KII, y = intercept, label = country)) + 
+#   geom_point() + 
+#   geom_smooth(se = F, method = lm) +
+#   geom_label(nudge_y = 0.001, alpha = 0.5) +
+#   theme_bw()
 ```
 
 ## Research question 3
