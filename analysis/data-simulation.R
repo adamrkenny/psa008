@@ -163,7 +163,6 @@ fake_data <-
              scale(permeability))
     )
 
-
 ##################################################
 ## RQ3 variables
 
@@ -233,6 +232,38 @@ fake_data <-
     mutate(dg_fam_bias_first = dg_fam_in_self - dg_fam_out_self,
            dg_fam_bias_third = dg_fam_in_out,
            att_fam_bias = att_fam_in - att_min_out)
+
+##################################################
+## demographic variables and additional measures
+
+## age categories
+age_cats <-
+
+    c("18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75 or above") 
+
+## political orientation categories
+pol_cats <-
+
+    c("Very liberal", "Somewhat liberal", "A little liberal", "Moderate",
+      "A little conservative", "Conservative", "Very conservative") 
+
+## income categories
+inc_cats <-
+
+    c("Far below average", "Below average", "Average", "Above average", "Far above average") 
+
+
+## add to data
+fake_data <-
+
+    fake_data %>%
+    mutate(
+        age = as.factor(sample(age_cats, nrow(fake_data), replace = TRUE)),
+        gender = as.factor(sample(c("male", "female", "other"),
+                                  nrow(fake_data), replace = TRUE, prob = c(0.49, 0.49, 0.02))),
+        political = as.factor(sample(pol_cats, nrow(fake_data), replace = TRUE)),
+        income = as.factor(sample(inc_cats, nrow(fake_data), replace = TRUE))
+        )
 
 ##################################################
 ## clean up df
