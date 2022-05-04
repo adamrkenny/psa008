@@ -8,6 +8,24 @@ webpage](https://psysciacc.org/psa-008-project-information/).
 
 ## about [analysis](./analysis) ##
 
+Most users will find it easiest to open the relevant Rmd script in
+rstudio, and knit the file. This will compile a html file with all the
+text, code chunks, and output by default. It might take a couple of
+minutes, especially if packages have to be installed (which should be
+done automatically if necessary upon compilation).
+
+For users who prefer to just run the code using R scripts,
+[purled](https://bookdown.org/yihui/rmarkdown-cookbook/purl.html)
+versions of the Rmd files have been also provided.
+
+### pilot
+
+The Rmd script [analysis-pilot.Rmd](./analysis/analysis-pilot.Rmd)
+ takes the processed pilot data and runs through the main analyses
+ described in the manuscript and in the analysis pipeline.
+
+### pipeline
+
 The Rmd script
  [analysis-pipeline.Rmd](./analysis/analysis-pipeline.Rmd) takes the
  artificial data created in
@@ -16,20 +34,25 @@ The Rmd script
  analysis pipeline is to troubleshoot models --- some errors might be
  an artifact of the artificial data.
 
+### power
+
 The Rmd script [power-analysis.Rmd](./analysis/power-analysis.Rmd)
 contains the power analysis, using the artificial data created in
 [data-simulation.R](./analysis/data-simulation.R) and the models
 specified in the analysis pipeline.
 
-Most users will find it easiest to open the Rmd script in rstudio, and
-possibly knit the file. This will compile a html file with all the
-text, code chunks, and output by default. It might take a couple of
-minutes, especially if packages have to be installed (which should be
-done automatically if necessary upon compilation).
-
 We acknowledge the use of the University of Oxford Advanced Research
 Computing (ARC) facility in carrying out the power analysis
 (http://dx.doi.org/10.5281/zenodo.22558).
+
+### other files
+
+- [custom-functions.R](./analysis/custom-functions.R): custom
+  functions used in other scripts
+
+- [country-level-indicators.csv](./analysis/custom-functions.R):
+random sample of countries with country-level measures of moderators
+used in RQ2, to test the analysis pipeline
 
 ## about [data](./data) ##
 
