@@ -8,21 +8,15 @@ webpage](https://psysciacc.org/psa-008-project-information/).
 
 ## about [analysis](./analysis) ##
 
-Most users will find it easiest to open the relevant Rmd script in
-rstudio, and knit the file. This will compile a html file with all the
-text, code chunks, and output by default. It might take a couple of
+Most users will prefer to open the relevant Rmd script in rstudio, and
+knit the file. This will compile a html file with all the text, code
+chunks, and output by default. Compilation might take a couple of
 minutes, especially if packages have to be installed (which should be
-done automatically if necessary upon compilation).
+done automatically, if necessary, upon compilation).
 
 For users who prefer to just run the code using R scripts,
 [purled](https://bookdown.org/yihui/rmarkdown-cookbook/purl.html)
 versions of the Rmd files have been also provided.
-
-### pilot
-
-The Rmd script [analysis-pilot.Rmd](./analysis/analysis-pilot.Rmd)
- takes the processed pilot data and runs through the main analyses
- described in the manuscript and in the analysis pipeline.
 
 ### pipeline
 
@@ -34,16 +28,22 @@ The Rmd script
  analysis pipeline is to troubleshoot models --- some errors might be
  an artifact of the artificial data.
 
+### pilot
+
+The Rmd script [analysis-pilot.Rmd](./analysis/analysis-pilot.Rmd)
+ takes the processed pilot data and runs through the main analyses
+ described in the manuscript and in the analysis pipeline.
+
 ### power
 
-The Rmd script [power-analysis.Rmd](./analysis/power-analysis.Rmd)
+The Rmd script [analysis-power.Rmd](./analysis/analysis-power.Rmd)
 contains the power analysis, using the artificial data created in
 [data-simulation.R](./analysis/data-simulation.R) and the models
-specified in the analysis pipeline.
-
-We acknowledge the use of the University of Oxford Advanced Research
-Computing (ARC) facility in carrying out the power analysis
-(http://dx.doi.org/10.5281/zenodo.22558).
+specified in the analysis pipeline. The power analysis was run with
+1000 simulations; users might want to run with fewere simulations for
+efficiency. We acknowledge the use of the University of Oxford
+Advanced Research Computing (ARC) facility in carrying out the power
+analysis (http://dx.doi.org/10.5281/zenodo.22558).
 
 ### other files
 
@@ -69,7 +69,7 @@ pilot study was launched. The csv file
 processed pilot data. There is an associated codebook, as the csv file
 [codebook-data-pilot-processed.csv](./data/codebook-data-pilot-processed.csv).
 The code for processing the raw data is in
-[wrangle-pilot-data.R](./analysis/wrangle-pilot-data.R).
+[process-pilot-data.R](./analysis/process-pilot-data.R).
 
 The csv file [exchange-rates.csv](./data/exchange-rates.csv) contains
 purchasing power adjusted exchange rates for countries across the
