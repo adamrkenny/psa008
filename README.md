@@ -27,6 +27,10 @@ text, code chunks, and output by default. It might take a couple of
 minutes, especially if packages have to be installed (which should be
 done automatically if necessary upon compilation).
 
+We acknowledge the use of the University of Oxford Advanced Research
+Computing (ARC) facility in carrying out the power analysis
+(http://dx.doi.org/10.5281/zenodo.22558).
+
 ## about [data](./data) ##
 
 Pilot data were collected 04 April 2022 on Prolific
