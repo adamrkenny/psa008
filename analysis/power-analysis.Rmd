@@ -85,7 +85,7 @@ We conduct a power analysis for each research question (RQ), using one of the pr
 
 ```{r, basic-settings}
 ## number of simulations
-## n_sim <- 100 # to troubleshoot
+## n_sim <- 10 # to troubleshoot
 n_sim <- 1000 # actual run
 
 ## sigma in models
@@ -97,7 +97,7 @@ rand_within_slopes <- 0.1
 
 ## Research question 1
 
-We have one model for RQ1: `r min_bias ~ measure + (1 | id)  + (measure | country/lab)`. For the power analysis, we provide estimated intercepts and slopes. The estimated intercept is 0.2 for the fixed effect "measure", while for the random effects it is 0.1 ("id"), 0.5 ("country"), and 0.1 ("lab"). We expect variation at the country level to be greater than the other two. All random slopes are set to 0.1.
+We have one model for RQ1: "min_bias ~ measure + (1 | id)  + (measure | country/lab)". For the power analysis, we provide estimated intercepts and slopes. The estimated intercept is 0.2 for the fixed effect "measure", while for the random effects it is 0.1 ("id"), 0.5 ("country"), and 0.1 ("lab"). We expect variation at the country level to be greater than the other two. All random slopes are set to 0.1.
 
 ``` {r, rq1}
 ## iterate over different effect sizes
@@ -206,7 +206,7 @@ power_curve_rq1
 # model_ext_subj <- extend(model, within="country+measure", n=150)
 # model_ext_subj
 
-save.image(file = paste0("power-analysis-rq1", n_sim, ".RData"))
+save.image(file = paste0("power-analysis-rq1-", n_sim, ".RData"))
 ```
 
 ## Research question 2
@@ -215,16 +215,16 @@ save.image(file = paste0("power-analysis-rq1", n_sim, ".RData"))
 
 For the individual level analysis of research question 2, we have three main
 moderators of interest: permeability, (in-group and out-group) trust, and
-self-esteem. Our confirmatory analyses compares six models. For the power analysis, we only use the maximal model (model 6) which includes all three moderators: `r min_bias ~ measure * (self_esteem + trust + permeability) + (1 | id) + (self_esteem + trust + permeability | country/lab)`. Intercepts for measure, id, country, and lab are the same as for RQ1. Again, all random slopes are set to 0.1.
+self-esteem. Our confirmatory analyses compares six models. For the power analysis, we only use the maximal model (model 6) which includes all three moderators: "min_bias ~ measure * (self_esteem + trust + permeability) + (1 | id) + (self_esteem + trust + permeability | country/lab)". Intercepts for measure, id, country, and lab are the same as for RQ1. Again, all random slopes are set to 0.1.
 
-We add intercepts for the three moderators as follows. The self-esteem beta coefficient is set to 0.11, which corresponds to the overall effect size reported in
-@Aberson-et-al_2000. This is the difference in in-group bias
+We add intercepts for the three moderators as follows. The self-esteem beta coefficient is set to 0.11, which corresponds to half the overall effect size reported in
+@Aberson-et-al_2000 of $d = $ 0.23. This is the difference in in-group bias
 (across different measures, not limited to minimal groups) between
 individuals with high \vs low self-esteem (across a variety of
 self-esteem measures). Although there is a wide range of effect sizes,
 the measures reported are not identical to our planned study, and the
 estimate is relatively old, it is the best estimate we are aware of.
-We are aware of no effect sizes of trust and permeatbilit in the literature to rely on for the power analysis, so we set the beta coefficients to 0.1.  
+We are aware of no effect sizes of trust and permeability in the literature to rely on for the power analysis, so we set the beta coefficients to 0.1.  
 
 ``` {r, pwr-rq2}
 ## iterate over different effect sizes
@@ -353,7 +353,7 @@ power_curve_rq2
 ## Research question 3
 
 For research question 3, we assess whether real-world bias (towards
-the nation and/or family) is predicted by minimal group bias. The model is `r att_real_bias ~ att_min_bias * group_type + (1 | id) + (att_min_bias + group_type | country/lab)`. We keep the same intercepts for measure, id, country, and lab as for RQ1 and RQ2. Again, all random slopes are set to 0.1. We set minimal bias to 0.16, the smaller effect size used as an outcome in RQ1 and RQ2.
+the nation and/or family) is predicted by minimal group bias. The model is "att_real_bias ~ att_min_bias * group_type + (1 | id) + (att_min_bias + group_type | country/lab)". We keep the same intercepts for measure, id, country, and lab as for RQ1 and RQ2. Again, all random slopes are set to 0.1. We set minimal bias to 0.16, the smaller effect size used as an outcome in RQ1 and RQ2.
 
 ``` {r, pwr-rq3}
 ## iterate over different effect sizes
