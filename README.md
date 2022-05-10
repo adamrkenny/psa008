@@ -6,6 +6,13 @@ Repository for the Psychological Science Accelerator's (PSA) project
 For more information on the project, visit the [PSA 008
 webpage](https://psysciacc.org/psa-008-project-information/).
 
+Note that the repository contains files related to two separate pilot
+studies: pilot 01 and pilot 02. The former was a test of eliciting the
+minimal group effect when implemented as a survey delivered via
+Qualtrics to online participants (US participants, n = 207). The
+latter was a means-test of the full procedure of the proposed study
+(GB and US participants, n = 400).
+
 ## about [analysis](./analysis) ##
 
 Most users will prefer to open the relevant Rmd script in rstudio, and
@@ -28,7 +35,13 @@ The Rmd script
  analysis pipeline is to troubleshoot models --- some errors might be
  an artifact of the artificial data.
 
-### pilot
+### pilot 01
+
+The R script [analysis-pilot-01.R](./analysis/analysis-pilot-01.R)
+ takes the (processed) pilot-01 data and runs through the main
+ analyses described in the manuscript.
+
+### pilot 02
 
 The Rmd script [analysis-pilot.Rmd](./analysis/analysis-pilot.Rmd)
  takes the processed pilot data and runs through the main analyses
@@ -55,6 +68,15 @@ random sample of countries with country-level measures of moderators
 used in RQ2, to test the analysis pipeline
 
 ## about [data](./data) ##
+
+### pilot 01
+
+Pilot data were collected via Amazon's Mechanical Turk, with a sample
+from the United States of America (n = 207). Participants were
+randomly assigned to a minimal group defined via a noun label serving
+as a group name (the ``Flurps'' vs. the ``Zazzes'').
+
+### pilot 02
 
 Pilot data were collected 04 April 2022 on Prolific
 [prolific.co](www.prolific.co), with a sample from the United Kingdom
