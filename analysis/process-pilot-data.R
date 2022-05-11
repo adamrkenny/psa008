@@ -70,7 +70,7 @@ numeric_likert_trust <- function(x) {
 ##     select(-starts_with("0."), -PROLIFIC_PID, -contains("Click"), -contains("Submit"))
 
 ## ## save as csv
-## df_raw %>% write_csv("../data/data-pilot-raw.csv")
+## df_raw %>% write_csv("../data/data-pilot-02-raw.csv")
 
 ##################################################
 ## create tibble using pilot data and save
@@ -84,7 +84,7 @@ df_raw <-
 
     ## FIXME use either above tibble or input raw data
     ## df_raw %>% 
-    read_csv("../data/data-pilot-raw.csv")
+    read_csv("../data/data-pilot-02-raw.csv")
 
 ## code to wrangle raw data
 df_processed <-
@@ -271,4 +271,4 @@ df_processed <-
         )
 
 ## ## save as csv
-## df_processed %>% write_csv("../data/data-pilot-processed.csv")
+## df_processed %>% write_csv("../data/data-pilot-02-processed.csv")

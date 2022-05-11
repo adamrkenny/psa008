@@ -11,7 +11,7 @@ library(tidyverse)
 library(qualtRics)
 
 # read data; may need to adjust file path
-raw <- read_survey('PSA008 Pilot1.csv')
+raw <- read_survey('../data/data-pilot-01-processed.csv')
 
 
 

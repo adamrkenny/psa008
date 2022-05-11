@@ -61,8 +61,7 @@ Pilot data imported and wrangled separately.
 
 ```{r, source-data, include = FALSE}
 ## loads the wrangled data and analyses
-## source("./wrangle-pilot.R")
-df <- read_csv("../data/data-pilot-processed.csv")
+df <- read_csv("../data/data-pilot-02-processed.csv")
 
 ## peek at data
 head(df)
