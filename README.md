@@ -38,14 +38,15 @@ The Rmd script
 ### pilot 01
 
 The R script [analysis-pilot-01.R](./analysis/analysis-pilot-01.R)
- takes the (processed) pilot-01 data and runs through the main
- analyses described in the manuscript.
+ takes the (minimally processed) pilot-01 data and runs through the
+ main analyses described in the manuscript.
 
 ### pilot 02
 
-The Rmd script [analysis-pilot.Rmd](./analysis/analysis-pilot.Rmd)
- takes the processed pilot data and runs through the main analyses
- described in the manuscript and in the analysis pipeline.
+The Rmd script
+ [analysis-pilot-02.Rmd](./analysis/analysis-pilot-02.Rmd) takes the
+ processed pilot data and runs through the main analyses described in
+ the manuscript and in the analysis pipeline.
 
 ### power
 
@@ -58,7 +59,7 @@ efficiency. We acknowledge the use of the University of Oxford
 Advanced Research Computing (ARC) facility in carrying out the power
 analysis (http://dx.doi.org/10.5281/zenodo.22558).
 
-### other files
+### other file(s)
 
 - [custom-functions.R](./analysis/custom-functions.R): custom
   functions used in other scripts
@@ -74,24 +75,30 @@ used in RQ2, to test the analysis pipeline
 Pilot data were collected via Amazon's Mechanical Turk, with a sample
 from the United States of America (n = 207). Participants were
 randomly assigned to a minimal group defined via a noun label serving
-as a group name (the ``Flurps'' vs. the ``Zazzes'').
+as a group name (the "Flurps" vs. the "Zazzes"). The csv file
+[data-pilot-01-processed.csv](./data/data-pilot-01-processed.csv)
+contains pilot data downloaded from Qualtrics that have been minimally
+processed.
 
 ### pilot 02
 
 Pilot data were collected 04 April 2022 on Prolific
 [prolific.co](www.prolific.co), with a sample from the United Kingdom
 (n = 200) and the United States of America (n = 200). The csv file
-[data-pilot-raw.csv](./data/data-pilot-raw.csv) contains raw pilot
-data. Specifically, this is the data downloaded from Qualtrics after
-the pilot study was completed, minus columns with identifying
+[data-pilot-02-raw.csv](./data/data-pilot-02-raw.csv) contains raw
+pilot data. Specifically, this is the data downloaded from Qualtrics
+after the pilot study was completed, minus columns with identifying
 information (e.g. IP address recorded by Qualtrics) and rows
 corresponding to troubleshooting attempts by the author(s) before the
 pilot study was launched. The csv file
-[data-pilot-processed.csv](./data/data-pilot-processed.csv) contains
-processed pilot data. There is an associated codebook, as the csv file
-[codebook-data-pilot-processed.csv](./data/codebook-data-pilot-processed.csv).
+[data-pilot-02-processed.csv](./data/data-pilot-02-processed.csv)
+contains processed pilot data. There is an associated codebook, as the
+csv file
+[codebook-data-pilot-02-processed.csv](./data/codebook-data-pilot-02-processed.csv).
 The code for processing the raw data is in
-[process-pilot-data.R](./analysis/process-pilot-data.R).
+[process-pilot-02-data.R](./analysis/process-pilot-02-data.R).
+
+### other file(s)
 
 The csv file [exchange-rates.csv](./data/exchange-rates.csv) contains
 purchasing power adjusted exchange rates for countries across the
