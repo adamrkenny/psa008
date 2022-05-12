@@ -18,15 +18,41 @@ numeric_likert_attitude <- function(x) {
     
 }
 
-## convert trust responses into numeric values
+## convert interpersonal trust responses into numeric values
 ## dependencies: tidyverse
-numeric_likert_trust <- function(x) {
+numeric_likert_trust_interpersonal <- function(x) {
 
     case_when(
         x %in% c("Completely") ~ 4,
         x %in% c("Somewhat") ~ 3,
         x %in% c("Not very much") ~ 2,
         x %in% c("Not at all") ~ 1
+    )
+    
+}
+
+## convert institutional trust responses into numeric values
+## dependencies: tidyverse
+numeric_likert_trust_institution <- function(x) {
+
+    case_when(
+        x %in% c("A great deal") ~ 4,
+        x %in% c("Quite a lot") ~ 3,
+        x %in% c("Not very much") ~ 2,
+        x %in% c("None at all") ~ 1
+    )
+    
+}
+
+## convert family tie (importance) responses into numeric values
+## dependencies: tidyverse
+numeric_likert_family_tie <- function(x) {
+
+    case_when(
+        x %in% c("Very important") ~ 4,
+        x %in% c("Rather important") ~ 3,
+        x %in% c("Not very important") ~ 2,
+        x %in% c("Not at all important") ~ 1
     )
     
 }
@@ -98,16 +124,15 @@ df_processed <-
         Allocate_TG_M = if_else(is.na(Allocate_TG_M_1), Allocate_TG_P_1, Allocate_TG_M_1)) %>%
     ## rename columns
     mutate(minimal_group = ingroupletter,
-           ## FIXME double check that above manipulation tracks
-           dg_min_in_self = as.numeric(Allocate_IG_M),
-           dg_min_out_self = as.numeric(Allocate_OG_M),
-           dg_min_in_out = as.numeric(Allocate_TG_M),
-           dg_nat_in_self = as.numeric(Allocate_IG_Nat_1),
-           dg_nat_out_self = as.numeric(Allocate_OG_Nat_1),
-           dg_nat_in_out = as.numeric(Allocate_TG_Nat_1),
-           dg_fam_in_self = as.numeric(Allocate_IG_Fam_1),
-           dg_fam_out_self = as.numeric(Allocate_OG_Fam_1),
-           dg_fam_in_out = as.numeric(Allocate_TG_Fam_1)
+           dg_min_in_self = as.numeric(Allocate_IG_M), # amount to self
+           dg_min_out_self = as.numeric(Allocate_OG_M), # amount to self
+           dg_min_in_out = as.numeric(Allocate_TG_M), # amount to in-group
+           dg_nat_in_self = as.numeric(Allocate_IG_Nat_1), # amount to self
+           dg_nat_out_self = as.numeric(Allocate_OG_Nat_1), # amout to self
+           dg_nat_in_out = as.numeric(Allocate_TG_Nat_1), # amount to in-group
+           dg_fam_in_self = as.numeric(Allocate_IG_Fam_1), # amount to self
+           dg_fam_out_self = as.numeric(Allocate_OG_Fam_1), # amount to self
+           dg_fam_in_out = as.numeric(Allocate_TG_Fam_1) # amount to in-group
            ) %>%
         ## attitude decisions
     mutate(across(starts_with("Attitude"), numeric_likert_attitude)) %>%
@@ -122,7 +147,7 @@ df_processed <-
         Attitude_OG_M_3 = if_else(is.na(Attitude_OG_M_3), Attitude_OG_P_3, Attitude_OG_M_3),
         Attitude_OG_M_4 = if_else(is.na(Attitude_OG_M_4), Attitude_OG_P_4, Attitude_OG_M_4)
     ) %>%
-    ## calculate bias
+    ## calculate bias NB subtract from 20 as either amount to self or to in-group
     mutate(dg_min_bias_first = (20 - dg_min_in_self) - (20 - dg_min_out_self),
            dg_min_bias_third = dg_min_in_out - (20 - dg_min_in_out),
            dg_nat_bias_first = (20 - dg_nat_in_self) - (20 - dg_nat_out_self),
@@ -165,8 +190,8 @@ df_processed <-
     ## remove leading 0s from gamepayoffs
     mutate(gamepayoff = str_remove(gamepayoff, "^0+")) %>%
     mutate(gamepayoff = if_else(gamepayoff == "", as.numeric(0), as.numeric(gamepayoff))) %>%
-    ## create trust variable
-    mutate(across(starts_with("interpersonaltrust"), numeric_likert_trust)) %>%
+    ## create interpersonal trust variable
+    mutate(across(starts_with("interpersonaltrust"), numeric_likert_trust_interpersonal)) %>%
     mutate(trust_in = (interpersonaltrust_1 + # family
                        interpersonaltrust_2 + # neighourhood
                        interpersonaltrust_3)/3, # personally
@@ -174,6 +199,12 @@ df_processed <-
                         interpersonaltrust_5 + # another religion
                         interpersonaltrust_6)/3, # another nationality
            trust_in_out = trust_in - trust_out
+           ) %>%
+    ## create institutional trust variable
+    mutate(across(starts_with("institutiontrust"), numeric_likert_trust_institution)) %>%
+    mutate(trust_institution = (institutiontrust_1 + # police
+                                institutiontrust_2 + # courts
+                                institutiontrust_3)/3 # government 
            ) %>%
     ## create self-esteem variable (remove text)
     mutate(self_esteem = as.numeric(str_extract(selfesteem_1, "[0-9]+"))) %>%
@@ -191,6 +222,26 @@ df_processed <-
              col_ind_7 + # children should feel honored
              col_ind_12)/4, # sacrifice an activity that I enjoy very much
         permeability = vertical_collectivism - horizontal_individualism) %>%
+    ## create family-ties composite measure (following Alesina & Giuliano, 2010)
+    mutate(family_tie_importance = numeric_likert_family_tie(familytie3_1),
+           family_tie_parental_duties = case_when(
+               str_detect(str_to_lower(familytie1), "one must always") ~ 2,
+               str_detect(str_to_lower(familytie1), "one does not") ~ 1,
+               TRUE ~ NA_real_),
+           family_tie_respect_parents = case_when(
+               str_detect(str_to_lower(familytie2), "do their best") ~ 2,
+               str_detect(str_to_lower(familytie2), "life of their own") ~ 1,
+               TRUE ~ NA_real_),
+           family_tie_sum =
+               family_tie_importance + family_tie_parental_duties + family_tie_respect_parents
+           ) %>%
+    ## create embeddedness into networks composite measure
+    mutate(residence_parents = case_when(
+               residence_wparents == "Yes" ~ 2,
+               residence_wparents == "No" ~ 1,
+               TRUE ~ NA_real_),
+           embeddedness =
+               numchildren + numsibling + numcousins + residence_parents) %>%
     ## rename basics
     mutate(date = start_date) %>%
     ## rename attention checks
@@ -237,7 +288,10 @@ df_processed <-
         ## explanatory measures
         self_esteem,
         trust_in, trust_out, trust_in_out,
+        trust_institution,
         horizontal_individualism, vertical_collectivism, permeability,
+        starts_with("family_tie_"),
+        embeddedness,
         ## attention checks
         starts_with("attention_"),
         starts_with("pass_attention_"),
