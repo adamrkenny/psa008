@@ -1,33 +1,23 @@
----
-title: "Analysis pipeline"
-author: "PSA 008"
-date: "`r format(Sys.time(), '%Y-%m-%d')`"
-output:
-  html_document:
-    df_print: paged
-    toc: yes
-    toc_depth: 2
-editor_options: 
-  chunk_output_type: console
----
+#' ---
+#' title: "Analysis pipeline"
+#' author: "PSA 008"
+#' ---
+#' 
+#' This document describes the analysis pipeline for PSA 008 Minimal
+#' Groups. It does not include the power analysis, which is in a
+#' separate document. The purpose is to troubleshoot --- some errors
+#' might be an artifact of the artificial data.
+#' 
 
-This document describes the analysis pipeline for PSA 008 Minimal Groups. It does not include the power analysis, which is in a separate document. The purpose is to troubleshoot --- some errors might be an artifact of the artificial data. 
-
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R package information
-
-```{r load-packages, message = FALSE, warning = FALSE}
+#' 
+#' ## R package information
+#' 
+## ----load-packages, message = FALSE, warning = FALSE--------------------------
 ## list of packages required
 packages <- c(
   "tidyverse", # data wrangling
   "lme4", # random effects models
-  "lmerTest", # random effects models
-  "metafor", # meta analysis
-  "mixedpower", # estimating power in lme
-  "simr" # simulating data
+  "lmerTest" # random effects models
 )
 ## create list of packages that have not been installed
 new_packages <-
@@ -43,33 +33,38 @@ source("./custom-functions.R")
 set.seed(1970) # to reproduce analysis
 
 sessionInfo() # session info
-``` 
 
-## Input artificial data
-
-We created an artificial dataset that contains the relevant variables in a separate script, which we can call here and in other files. Note the dataset here will include the variables used in the main analyses, not all collected variables. Furthermore, the dataset resembles the processed data, not the raw data from Qualtrics.
-
-```{r, source-simulated-data}
+#' 
+#' ## Input artificial data
+#' 
+#' We created an artificial dataset that contains the relevant
+#' variables in a separate script, which we can call here and in other
+#' files. Note the dataset here will include the variables used in the
+#' main analyses, not all collected variables. Furthermore, the
+#' dataset resembles the processed data, not the raw data from
+#' Qualtrics.
+#' 
+## ---- source-simulated-data---------------------------------------------------
 ## loads the simulated data, and wrangled dataframes for each RQ
 source("./data-simulation.R")
 
 ## peek at data
 head(fake_data)
-```
 
-The (minimal group) dependent measures are based on the
-three dictator games (in-group--self, out-group--self,
-in-group--out-group) and the average attitude towards in-group and
-towards out-group. The resultant three (minimal group) measures are: difference
-between in-group and out-group attitudes (att_bias), difference between
-in-group–self and out-group–self decisions in the dictator game (dg_first_bias), and
-the decision in the in-group–out-group dictator game (dg_third_bias).
-
-## Research question 1
-
-Let's run some summary statistics (of att_bias).
-
-```{r, rq1-manipulation}
+#' 
+#' The (minimal group) dependent measures are based on the
+#' three dictator games (in-group--self, out-group--self,
+#' in-group--out-group) and the average attitude towards in-group and
+#' towards out-group. The resultant three (minimal group) measures are: difference
+#' between in-group and out-group attitudes (att_bias), difference between
+#' in-group–self and out-group–self decisions in the dictator game (dg_first_bias), and
+#' the decision in the in-group–out-group dictator game (dg_third_bias).
+#' 
+#' ## Research question 1
+#' 
+#' Let's run some summary statistics (of att_bias).
+#' 
+## ---- rq1-manipulation--------------------------------------------------------
 ## peek at dataframe
 head(df_rq1)
 
@@ -86,13 +81,13 @@ fake_data %>%
             sd = sd(att_min_bias, na.rm = TRUE)) %>% 
   mutate_if(is.numeric, ~round(., 2)) %>% 
   print(n = n_countries)
-```
 
-We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
-
-We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
-
-```{r, rq1-combined-dv-group}
+#' 
+#' We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
+#' 
+#' We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
+#' 
+## ---- rq1-combined-dv-group---------------------------------------------------
 ## model with country
 model_country_all <- 
 
@@ -100,11 +95,14 @@ model_country_all <-
                        (1 | id)  + 
                        (measure | country/lab),
                    data = df_rq1
-                   ## , contrasts = list(measure = "contr.sum")
                    )
 
 ## summary
 summary(model_country_all)
+
+## icc
+## country variance / (residual + country variance)
+## TODO insert values
 
 ## dotplot
 gg_caterpillar(ranef(model_country_all, condVar = TRUE), QQ = FALSE, 
@@ -119,9 +117,9 @@ df_rq1 %>%
   guides(colour = "none") +
   theme(axis.text.x = element_blank(),
         axis.ticks = element_blank())
-```
 
-``` {r, rq1-combined-dv-dummy}
+#' 
+## ---- rq1-combined-dv-dummy---------------------------------------------------
 ## country
 model_country_dummy <- 
 
@@ -135,6 +133,7 @@ summary(model_country_dummy)
 
 ## icc
 ## country variance / (residual + country variance)
+## TODO insert values
 
 ## dotplot
 gg_caterpillar(ranef(model_country_dummy, condVar = TRUE), QQ = FALSE, 
@@ -159,6 +158,7 @@ coefs_model <- coef(model_country_dummy)
 
 ## print random effects and best line
 ## shown is just dg_third_dummy
+## NB this will be more meaningful with actual data
 coefs_model$country %>%
   mutate(country = rownames(coefs_model$country),
          intercept = `(Intercept)`) %>% 
@@ -167,101 +167,145 @@ coefs_model$country %>%
   geom_smooth(se = F, method = lm) +
   geom_label(nudge_y = 0.15, alpha = 0.5) +
   theme_bw()
-```
 
-The above will be repeated with covariates, as follows
+#' 
+## ----df-rq1-additional, include = FALSE----------------------------------------
 
+##### demographics
+## include demographic variables
+## as robustness check
 
+## model with country
+model_country_all_demographics <- 
 
-## Research question 2
+    lmerTest::lmer(min_bias ~ measure + age + income + political +
+                       (1 | id)  + 
+                       (measure | country/lab),
+                   data = df_rq1
+                   )
 
-### Individual level 
+## summary
+summary(model_country_all_demographics)
 
-For the individual level analysis of research question 2, we have three main
-moderators of interest: permeability, (in-group and out-group) trust, and
-self-esteem. We compare various models:
+## run anova to check significance of demographic vars
+anova(model_country_all_demographics, ddf = "Kenward-Roger")
 
-```{r df-rq2}
+#' 
+#' ## Research question 2
+#' 
+#' ### Individual level 
+#' 
+#' For the individual level analysis of research question 2, we have three main
+#' moderators of interest: permeability, (in-group and out-group) trust, and
+#' self-esteem. We compare various models:
+#' 
+## ----df-rq2-------------------------------------------------------------------
 ## peek at dataframe
 head(df_rq2)
-``` 
 
-```{r rq2-models}
-## minimal model (model 1)
+#' 
+## ----rq2-models---------------------------------------------------------------
+## minimal model
 model_rq2_min <-
     
     lmerTest::lmer(
         min_bias ~ measure +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
-## model with esteem (model 2)
+## model with esteem
 model_rq2_esteem <-
     
     lmerTest::lmer(
         min_bias ~ measure * self_esteem +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
-## model with trust (model 3)
-model_rq2_trust <-
+## model with trust (in/out)
+model_rq2_trust_in_out <-
     
     lmerTest::lmer(
-        min_bias ~ measure * trust +  
+        min_bias ~ measure * trust_in_out +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
-## model permeability (model 4)
+## model with trust (institutional)
+model_rq2_trust_institution <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * trust_institution +  
+          (1 | id)  + 
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+        data = df_rq2)
+
+## model permeability
 model_rq2_permeability <-
     
     lmerTest::lmer(
         min_bias ~ measure * permeability +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
-## model with esteem plus trust (model 5)
-model_rq2_esteem_trust <-
+## model with esteem and trust
+model_rq2_esteem_trust_in_out <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust) +  
+        min_bias ~ measure * (self_esteem + trust_in_out) +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
-## maximal model (model 6)
+## model with esteem and trust (both in/out and institution)
+model_rq2_esteem_trust_both <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * (self_esteem + trust_in_out + trust_institution) +  
+          (1 | id)  + 
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+        data = df_rq2)
+
+## maximal model
 model_rq2_max <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust + permeability) +  
+        min_bias ~ measure * (self_esteem + trust_in_out + trust_institution + permeability) +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
 ## compare models
-anova(model_rq2_min, 
-      model_rq2_esteem, 
-      model_rq2_trust,
-      model_rq2_permeability,
-      model_rq2_esteem_trust,
-      model_rq2_max)
-
-## excplicitly AIC comparison, although above considers it with ML
-AIC(model_rq2_min, 
+anova(
+    model_rq2_min, 
     model_rq2_esteem, 
-    model_rq2_trust, 
-    model_rq2_permeability, 
-    model_rq2_esteem_trust,
-    model_rq2_max)
+    model_rq2_trust_in_out,
+    model_rq2_trust_institution,
+    model_rq2_permeability,
+    model_rq2_esteem_trust_in_out,
+    model_rq2_esteem_trust_both,
+    model_rq2_max
+)
+
+## explicitly AIC comparison, although above considers it with ML
+AIC(
+    model_rq2_min, 
+    model_rq2_esteem, 
+    model_rq2_trust_in_out,
+    model_rq2_trust_institution,
+    model_rq2_permeability,
+    model_rq2_esteem_trust_in_out,
+    model_rq2_esteem_trust_both,
+    model_rq2_max
+)
 
 ## NB if the anova() and AIC() comparisons suggest different model order
 ## then give preferene to results of anova()
-```
 
-``` {r, rq2-country-level-effects}
+#' 
+## ---- rq2-country-level-effects-----------------------------------------------
 ## select model and run the following
 
 ## graph with predicted country level min bias
@@ -290,16 +334,78 @@ coefs_model$country %>%
   geom_point() + 
   geom_smooth(se = F, method = lm) +
   geom_label(nudge_y = 0.001, alpha = 0.5) +
-  theme_bw()
-``` 
+    theme_bw()
 
-The above will be repeated with covariates.
+#' 
+## ----df-rq2-additional, include = FALSE----------------------------------------
 
-### Country level 
+##### other indicators
+## additional individual-level analyses
+## that include other measures linked to permeability
+## as robustness checks
 
-We see if country-level predictors (Hofstede's individualism, the strength of family ties, in-group--out-group trust, and the Kinship Intensity Indicator) are significantly correlated with the countries' MGE means measures.
+## NB not included as embeddedness and family ties not generated in
+## simulated data
 
-```{r, rq2-country}
+## ## model embeddedness
+## model_rq2_embeddedness <-
+    
+##     lmerTest::lmer(
+##         min_bias ~ measure * embeddedness +  
+##           (1 | id)  + 
+##           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+##         data = df_rq2)
+
+## ## model family ties
+## model_rq2_family_ties <-
+    
+##     lmerTest::lmer(
+##         min_bias ~ measure * family_tie_pc1 +  
+##           (1 | id)  + 
+##           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+##         data = df_rq2)
+
+## ## AIC comparison
+## AIC(
+##     model_rq2_permeability,
+##     model_rq2_embeddedness,
+##     model_rq2_family_ties
+## )
+
+##### demographics
+## include demographic variables
+## as robustness checks
+
+## NB this will be the model with lowest AIC, included here for
+## demonstration purposes
+
+## ## model with country
+## model_rq2_min_demographics <- 
+
+##     lmerTest::lmer(
+##                   min_bias ~ measure + age + income_when16 + political_orientation +
+##                       (1 | id)  + 
+##                       (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+##                   data = df_rq1
+##               )
+
+## ## summary
+## summary(model_rq2_min_demographics)
+
+## ## run anova to check significance of demographic vars
+## anova(model_rq2_min_demographics, ddf = "Kenward-Roger")
+
+#' 
+#' ### Country level 
+#' 
+#' We see if country-level predictors (Hofstede's individualism, the
+#' strength of family ties, in-group--out-group trust, and the Kinship
+#' Intensity Indicator) are significantly correlated with the
+#' countries' MGE means measures. Here we demonstrate with with
+#' Hofstede's individualism, the Kinship Intensity Indicator, and
+#' trust from country-level indicators shared by JS.
+#' 
+## ---- rq2-country-------------------------------------------------------------
 ## read in country level indicators
 country_level_indicators <-
   
@@ -340,28 +446,20 @@ joined %>%
   facet_wrap(. ~ country_measure) +
   theme_bw()
 
-## plot (example with single measure)
-# joined %>%
-#   ggplot(aes(x = KII, y = intercept, label = country)) + 
-#   geom_point() + 
-#   geom_smooth(se = F, method = lm) +
-#   geom_label(nudge_y = 0.001, alpha = 0.5) +
-#   theme_bw()
-```
-
-## Research question 3
-
-For research question 3, we assess whether real-world bias (towards
-the nation and/or family) is predicted by minimal group bias. 
-
-```{r measures-real-world-bias}
+#' 
+#' ## Research question 3
+#' 
+#' For research question 3, we assess whether real-world bias (towards
+#' the nation and/or family) is predicted by minimal group bias. 
+#' 
+## ----measures-real-world-bias-------------------------------------------------
 ## peek at dataframe
 head(df_rq3)
-```
 
-To avoid three-way interactions, we model each measure separately. We demonstrate the analysis with the attitude measures.
-
-``` {r rq3}
+#' 
+#' To avoid three-way interactions, we model each measure separately. We demonstrate the analysis with the attitude measures.
+#' 
+## ----rq3----------------------------------------------------------------------
 ## real-world
 model_real_world <- 
 
@@ -376,9 +474,9 @@ summary(model_real_world)
 ## ## run anova
 ## anova(model_real_world, ddf = "Kenward-Roger")
 
-``` 
 
-```{r plot-rq3}
+#' 
+## ----plot-rq3-----------------------------------------------------------------
 
 model_coefs <- 
   
@@ -405,7 +503,33 @@ ggplot(data = df_rq3_rand,
   facet_wrap(. ~ group_type) +
   guides(colour = "none") +
   theme_bw()
-```
 
-The above will be repeated for minimal bias in both the first- and third-party
-dictator games.
+#' 
+#' The above will be repeated for minimal bias in both the first- and
+#' third-party dictator games.
+
+
+#' 
+## ----df-rq3-additional, include = FALSE----------------------------------------
+
+##### demographics
+## include demographic variables
+## as robustness checks
+## NB this will be with all models, included model here for demonstration purposes
+
+## ## model with country
+## model_real_world_demographics <- 
+
+
+##     lmerTest::lmer(
+##                   att_real_bias ~ att_min_bias * group_type + age + income_when16 + political_orientation +
+##                       (1 | id)  + 
+##                        (att_min_bias + group_type | country/lab),
+##                   data = df_rq3_att
+##               )
+
+## ## summary
+## summary(model_real_world_demographics)
+
+## ## run anova to check significance of demographic vars
+## anova(model_rq2_min_demographics, ddf = "Kenward-Roger")
