@@ -1,42 +1,22 @@
----
-title: "Pilot study: summary and analysis"
-author: "PSA 008"
-date: "`r format(Sys.time(), '%Y-%m-%d')`"
-output:
-  html_document:
-    df_print: paged
-    toc: yes
-    toc_depth: 2
-  pdf_document:
-    toc: yes
-    toc_depth: '2'
-editor_options:
-  chunk_output_type: console
----
+#' ---
+#' title: "Pilot study: summary and analysis"
+#' author: "PSA 008"
+#' ---
+#' 
+#' This document describes the analysis pipeline for PSA 008 Minimal
+#' Groups, using the pilot study.
+#' 
 
-This document describes the analysis pipeline for PSA 008 Minimal Groups, using the pilot study.
-
-```{r setup, include = FALSE, purl = FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(warning = FALSE)
-options(scipen = 1, digits = 2) #set to two decimal 
-```
-
-## R package information
-
-```{r load-packages, message = FALSE, warning = FALSE, echo = FALSE, include = FALSE}
+#' 
+#' ## R package information
+#' 
+## ----load-packages, message = FALSE, warning = FALSE, echo = FALSE, include = FALSE----
 ## list of packages required
 packages <- c(
   "tidyverse", # data wrangling
   "lme4", # random effects models
   "lmerTest", # random effects models
-  "metafor", # meta analysis
-  "mixedpower", # estimating power in lme
-  "simr", # simulating data
-  "knitr", # tables
-  "tableone", # tables
-  "kableExtra" # tables
+  "patchwork" # plots
 )
 ## create list of packages that have not been installed
 new_packages <-
@@ -49,125 +29,39 @@ sapply(packages, library, character.only = TRUE)
 
 source("./custom-functions.R")
 
-``` 
-
-``` {r sessioninfo, message = FALSE, warning = FALSE}
+#' 
+## ----sessioninfo, message = FALSE, warning = FALSE----------------------------
 sessionInfo() # session info
-```
 
-## Input pilot data
-
-Pilot data imported and wrangled separately.
-
-```{r, source-data, include = FALSE}
+#' 
+#' ## Input pilot data
+#' 
+#' Pilot data imported and wrangled separately.
+#' 
+## ---- source-data, include = FALSE--------------------------------------------
 ## loads the wrangled data and analyses
 df <- read_csv("../data/data-pilot-02-processed.csv")
 
 ## peek at data
 head(df)
-```
 
-## Sample characteristics
+#' 
+#' # Analysis
+#' 
+#' The (minimal group) dependent measures are based on the three
+#' dictator games (in-group--self, out-group--self,
+#' in-group--out-group) and the average attitude towards in-group and
+#' towards out-group. The resultant three (minimal group) measures
+#' are: difference between in-group and out-group attitudes
+#' (att_bias), difference between in-group–self and out-group–self
+#' decisions in the dictator game (dg_first_bias), and the decision in
+#' the in-group–out-group dictator game (dg_third_bias).
+#' 
+#' ## Descriptives
+#' 
+## ----bias-descriptives--------------------------------------------------------
 
-The second pilot experiment implemented the full experimental procedure that we propose for this registered report in two countries, the US and the UK, in order to means-test the full procedure including our bonus payment procedure. We aimed to recruit 400 participants, 200 from each country, via Prolific (www.prolific.co). We successfully enrolled 200 US  and 200 UK (modal age category: 25-34 years; gender: 50% female) participants. Data were collected on 4 April 2022, with recruitment beginning 11:00 local time. 
-
-### Test of procedure
-
-Randomisation into roles worked successfully with 200 allocators, 199 recipients, and 1 NA. Randomisation into minimal groups worked successfully with between 48 and 53 counts of each minimal in-group letter (across 400 participants and 8 letters, the expected number was 50). Likewise, payment calculations worked successfully, with mean earnings of `r pull(summarise(df, mean = mean(gamepayoff, na.rm = TRUE)))` points (SD = `r pull(summarise(df, sd = sd(gamepayoff, na.rm = TRUE)))` points, range `r pull(summarise(df, min = min(gamepayoff, na.rm = TRUE)))`--`r pull(summarise(df, max = max(gamepayoff, na.rm = TRUE)))` points).
-
-### Exclusion criteria
-
-Note that we do not exclude anyone from the analysis of the pilot data in FIXME section, but we apply the criteria to means-test them.
-
-Out of the 400 participants, 399 completed all of the survey and 1 did not. The one participant who did not complete the survey completed 97% of it, dropping out before being allocated a role, and only responded to the demographics questions. Participants completed the survey in a mean of `r pull(summarise(df, mean = mean(duration, na.rm = TRUE)))` minutes (SD = `r pull(summarise(df, mean = mean(duration, na.rm = TRUE)))` mins, range `r pull(summarise(df, min = min(duration, na.rm = TRUE)))`--`r pull(summarise(df, max = max(duration, na.rm = TRUE)))` mins).
-
-Most participants passed the first general attention check, as 388 (`r scales::percent(388/400)`) correctly stated "somewhat disagree". The remaining 12  (`r scales::percent(12/400)`) incorrectly stated "strongly disagree". All participants passed the second general attention check, stating "18". Most participants passed the minimal group attention check, with  (382, `r scales::percent(382/400)`) correctly remembering their minimal group. Taking into account all three attention checks, 370 (`r scales::percent(370/400)`) got all three correct and the remaining 30 (`r scales::percent(30/400)`) got only two correct.
-
-Participants were asked if they were familiar with the minimal group effect, and 395 (`r scales::percent(395/400)`) stated "no", 4 (`r scales::percent(4/400)`) stated "yes", and 1 NA. Those who stated "yes" were asked to elaborate, with the responses in the following table:
-
-```{r mgp-followup, echo = FALSE, results = "asis"}
-  df %>%
-    filter(mgp_familiarity == "Yes") %>%
-    select(mgp_followup) %>%
-    kbl(.,
-    format = "latex",
-    booktabs = TRUE,
-    col.names = c("response"),
-    caption = "Open responses to question 'What do you know about the Minimal Group Effect (MGE)?' among those who reported familiarity with the minimal group effect (n = 4)") %>%
-   kable_paper() %>%
-  kable_styling()
-```
-
-##  Demographics characteristics
-
-Table below summarises demographic charactersitics.
-
-```{r tbl-demographics, echo = FALSE, results = "asis"}
-## create a variable list which we want in table one
-listVars <- 
-    
-    c("age", "gender", "political_orientation", "income_when16", "work_situation", "education", "marital_status"
-      )
-
-## create table using package tableone
-tableone <- 
-    
-    CreateTableOne(vars = listVars, 
-                   data = df, 
-                   factorVars = listVars, 
-                   strata = "country",
-                   includeNA = TRUE,
-                   test = FALSE,
-                   addOverall = TRUE
-                   ) 
-
-## set options for printing table
-print_tableone <- 
-    
-    print(tableone, 
-          format = "p", 
-          contDigits = 1)
-
-# kbl(print_tableone,
-#     format = "latex",
-#     booktabs = TRUE,
-#     caption = "Demographic characteristics") %>%
-#    kable_paper() %>%
-#   kable_styling()
-
-kbl(print_tableone) %>%
-  kable_paper() %>%
-  kable_styling(fixed_thead = TRUE) %>%
-  scroll_box(height = "500px")
-
-
-```
-
-# Analysis
-
-The (minimal group) dependent measures are based on the
-three dictator games (in-group--self, out-group--self,
-in-group--out-group) and the average attitude towards in-group and
-towards out-group. The resultant three (minimal group) measures are: difference
-between in-group and out-group attitudes (att_bias), difference between
-in-group–self and out-group–self decisions in the dictator game (dg_first_bias), and
-the decision in the in-group–out-group dictator game (dg_third_bias).
-
-## Descriptives
-
-```{r bias-descriptives}
-## calculate mean, sd, max, min for a given variable
-## dependencies: tidyverse
-summary_stats <-  function(x, p) {
-
-    ## create tibble with seperate columns
-    x %>%
-        summarise_at(c(p), c(mean, sd, min, max), na.rm = TRUE) %>%
-        rename(mean = fn1, sd = fn2, min = fn3, max = fn4)
-    
-}
-
-## number of completions
+## descriptives of all bias measures
 for (i in c("att_min_bias", "att_nat_bias", "att_fam_bias", 
             "dg_min_bias_first", "dg_nat_bias_first", "dg_fam_bias_first",
             "dg_min_bias_third", "dg_nat_bias_third", "dg_fam_bias_third")) {
@@ -176,18 +70,50 @@ for (i in c("att_min_bias", "att_nat_bias", "att_fam_bias",
            df %>%
            summary_stats(i)
            )
-
+           
 }
 
-```
+## check descriptives, as reported in main text
+## NB these are unstandardized
 
-The plot shows the distribution of bias across the conditions and the two countries. The was minimal bias in attitudes (M = `r pull(df_att_min_bias, mean)`, SD = `r pull(df_att_min_bias, sd)`), in first-party DG (M = `r pull(df_dg_min_bias_first, mean)`, SD = `r pull(df_dg_min_bias_first, sd)`), and third-party DG (M = `r pull(df_dg_min_bias_third, mean)`, SD = `r pull(df_dg_min_bias_third, sd)`).
+## minimal group
+df_att_min_bias
+df_dg_min_bias_first
+df_dg_min_bias_third
 
-```{r bias-plot, eval = FALSE}
+## family group
+df_att_fam_bias
+df_dg_fam_bias_first
+df_dg_fam_bias_third
+
+## national group
+df_att_nat_bias
+df_dg_nat_bias_first
+df_dg_nat_bias_third
+
+## t-tests for p values reported in main text
+
+## minimal group
+t.test(df$att_min_bias)
+t.test(df$dg_min_bias_first)
+t.test(df$dg_min_bias_third)
+
+## family group
+t.test(df$att_fam_bias)
+t.test(df$dg_fam_bias_first)
+t.test(df$dg_fam_bias_third)
+
+## national group
+t.test(df$att_nat_bias)
+t.test(df$dg_nat_bias_first)
+t.test(df$dg_nat_bias_third)
+
+## ----bias-plot, eval = FALSE--------------------------------------------------
+## create long dataframe
 df2 <-
 
     df %>%
-    pivot_longer(cols = c(contains("_bias")), 
+    pivot_longer(cols = c(contains("_bias")),
                  names_to = "measure",
                  values_to = "value") %>%
     separate(measure, into = c("type", "group", "bias", "dgtype"), sep = "_") %>%
@@ -197,172 +123,176 @@ df2 <-
                             TRUE ~ NA_character_)) %>%
     unite(col = "grouptype", c("type", "group"), remove = FALSE) %>%
     mutate(group = factor(group, levels = c("min", "fam", "nat"),
-                          labels = c("minimal", "family", "national")))
+                          labels = c("minimal", "family", "national"))) %>%
+    mutate(min_value = if_else(type == "att", -6, -20)) %>% 
+    mutate(max_value = if_else(type == "att", 6, 20)) %>%
+    mutate(interval_value = if_else(type == "att", 1, 4))
 
+## generate plot of each measure, faceted by country
 for (measure in c("att", "dg_first", "dg_third")) {
 
-    bias_summary_measure <-
+    df2_measure <-
 
     df2 %>%
-    filter(type == measure) %>%
-    Rmisc::summarySE(measurevar = "value",
-                     groupvars = c("group", "country"),
-                     na.rm = TRUE)
-
+    filter(type == measure)            
+    
+    bias_summary_measure <-
+        
+        df2_measure %>%
+        Rmisc::summarySE(measurevar = "value",
+                         groupvars = c("group", "country"),
+                         na.rm = TRUE)
+    
     assign(paste0("plot_bias_", measure),
-           
-           df2 %>%
-           filter(type == measure) %>%
+
+           df2_measure %>%
            mutate(intercept_no_bias = 0) %>%
            ggplot(aes(x = group,
                       y = value,
                       fill = group, 
                       colour = group
                       )) +
-    geom_flat_violin(position = position_nudge(x = .25,
-                                               y = 0),
-                     adjust = 2,
-                     trim = TRUE,
-                     na.rm = TRUE,
-                     alpha = 0.5) +
-    geom_point(position =
-                   position_jitter(width = .05, height = .05),
-               size = 2,
-               alpha = 0.4,
-               na.rm = TRUE
-               ) +
-    geom_errorbar(data = bias_summary_measure,
-                  aes(ymin = value - ci,
-                      ymax = value + ci),
-                  position = position_nudge(y = 0.25),
-                  colour = "grey40",
-                  width = 0,
-                  size = 1.5
+           geom_flat_violin(position = position_nudge(x = .25,
+                                                      y = 0),
+                            adjust = 2,
+                            trim = TRUE,
+                            na.rm = TRUE,
+                            alpha = 0.5) +
+           geom_point(position =
+                          position_jitter(width = .05, height = .05),
+                      size = 2,
+                      alpha = 0.4,
+                      na.rm = TRUE
+                      ) +
+           geom_errorbar(data = bias_summary_measure,
+                         aes(ymin = value - ci,
+                             ymax = value + ci),
+                         position = position_nudge(y = 0.25),
+                         colour = "grey40",
+                         width = 0,
+                         size = 1.5
+                         ) +
+           geom_point(data = bias_summary_measure,
+                      position = position_nudge(y = 0.25),
+                      size = 4,
+                      shape = 19,
+                      fill = "black",
+                      colour = "grey40"
+                      ) +
+           geom_hline(aes(yintercept = intercept_no_bias),
+                      linetype = "dashed",
+                      colour = "grey40") +
+           facet_grid(. ~ country,
+                      scales = "free",
+                      space = "free",
+                      shrink = TRUE,
+                      drop = TRUE
+                      ) +
+           scale_y_continuous(breaks = c(seq(unique(df2_measure$min_value),
+                                             unique(df2_measure$max_value),
+                                             unique(df2_measure$interval_value))),
+                              limits = c(unique(df2_measure$min_value),
+                                         unique(df2_measure$max_value))) +
+           scale_fill_brewer(palette = "Set2") +
+           scale_colour_brewer(palette = "Set2") +
+           labs(x = "",
+                y = "bias") +
+           guides(fill = "none",
+                  colour = "none"
                   ) +
-    geom_point(data = bias_summary_measure,
-               position = position_nudge(y = 0.25),
-               size = 4,
-               shape = 19,
-               fill = "black",
-               colour = "grey40"
-               ) +
-    geom_hline(aes(yintercept = intercept_no_bias),
-               linetype = "dashed",
-               colour = "grey40") +
-    facet_grid(. ~ country,
-               scales = "free",
-               space = "free",
-               shrink = TRUE,
-               drop = TRUE
-               ) +
-    scale_y_continuous(breaks = c(seq(-6,6,1)), limits = c(-6, 6)) +
-    scale_fill_brewer(palette = "Set2") +
-    scale_colour_brewer(palette = "Set2") +
-    labs(x = "",
-         y = "bias") +
-    guides(fill = "none",
-           colour = "none"
-           ) +
-    theme_classic() +
-    theme(text = element_text(size = 20),
-          axis.text.x=element_text(angle = 45, hjust = 1),
-          strip.placement = "outside")
-    )    
-
+           theme_classic() +
+           theme(text = element_text(size = 20),
+                 axis.text.x=element_text(angle = 45, hjust = 1),
+                 strip.placement = "outside")
+           )    
+    
 }
 
-plot_bias <- 
+## combine plots
+plot_bias <-
 
     (
-    (plot_bias_att + 
-     ggtitle("attitudinal bias")) +
-    (plot_bias_dg_first + 
-     ggtitle("first-party bias")) +
-    (plot_bias_dg_third +
-     ggtitle("third-party bias"))) +
+        (plot_bias_att +
+         ggtitle("attitudinal bias")) +
+        (plot_bias_dg_first +
+         ggtitle("first-party bias")) +
+        (plot_bias_dg_third +
+         ggtitle("third-party bias"))
+    ) +
     plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
     theme(plot.tag = element_text(face = "bold"))
 
+## plot included as figure 1 in RR 
 plot_bias
 
 
-```
+#' 
+## ----rq2-descriptives-selfesteem----------------------------------------------
 
-``` {r rq2-descriptives-selfesteem}
+## descriptives of moderators
+for (i in c("self_esteem", "trust_in_out", "trust_institution",
+            "permeability", "family_tie_sum", "embeddedness")) {
 
-df_selfesteem <-
+    assign(paste0("df_", i),
+           df %>%
+           summary_stats(i)
+           )
 
-    df %>%
-    summary_stats("self_esteem")
+}
 
-df_selfesteem_plot <-
+## check descriptives, e.g. for main moderators
+df_self_esteem
+df_trust_in_out
+df_permeability
+## NB these are unstandardized
+
+## plot of self-esteem
+plot_self_esteem <-
     
     df %>%
     ggplot(aes(x = self_esteem)) +
     geom_bar(aes(y = (..count..)/sum(..count..))) + #    geom_histogram(stat = "count") +
     labs(x = "self-esteem") +
-    ## scale_x_binned(n.breaks = 7) +
     scale_x_continuous(breaks = unique(df$self_esteem)) + #, lim = c(1,7)) +
     scale_y_continuous("percentage (%)", labels = scales::percent) +
     facet_wrap(. ~ country) +
     theme_classic() +
     theme(text = element_text(size = 15))
 
-df_selfesteem_plot
-```
+## print plot
+plot_self_esteem
 
+## plot other measures (that are not binned)
+for (moderator in c("trust_in_out", "trust_institution", "permeability",
+                    "family_tie_sum", "embeddedness")) {
+                      
+    assign(paste0("plot_", moderator),
 
-``` {r rq2-descriptives-trust}
-df_trust <-
+           df %>%
+           select(moderator, country) %>%
+           ggplot(aes(x = .[[1]])) + 
+           geom_density() +
+           facet_wrap(. ~ country) +
+           theme_classic() +
+           labs(x = moderator) +
+           # scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, 1)) +
+           theme(text = element_text(size = 15))
 
-    df %>%
-    summary_stats("trust_in_out")
+           )
 
+}
+           
+## print plots, e.g.
+plot_trust_in_out
+plot_trust_institution
+plot_permeability
 
-df_trust_plot_country <-
-    
-    df %>% 
-    ggplot(aes(trust_in_out)) + 
-    geom_density() +
-    facet_wrap(. ~ country) +
-    theme_classic() +
-    labs(x = "trust") +
-    scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, 1)) +
-    theme(text = element_text(size = 15))
-
-
-df_trust_plot_country
-```
-
-``` {r rq2-descriptives-permeability}
-df_permeability <-
-
-    df %>%
-    summary_stats("permeability")
-
-
-df_permeability_plot_country <-
-    
-    df %>% 
-    ggplot(aes(permeability)) + 
-    geom_density() +
-    facet_wrap(. ~ country) +
-    theme_classic() +
-    labs(x = "trust") +
-    scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, 1)) +
-    theme(text = element_text(size = 15))
-
-df_permeability_plot_country
-```
-
-
-Self-esteem (single-item) had a mean of `r pull(df_selfesteem, mean)` (SD = `r pull(df_selfesteem, sd)`, range `r pull(df_selfesteem, min)`--`r pull(df_selfesteem, max)`). The composite trust score had a mean of `r pull(df_trust, mean)` (SD = `r pull(df_trust, sd)`, range `r pull(df_trust, min)`--`r pull(df_trust, max)`). The composite permeability score had a mean of `r pull(df_permeability, mean)` (SD = `r pull(df_permeability, sd)`, range `r pull(df_permeability, min)`--`r pull(df_permeability, max)`).
-
-## Research question 1
-
-We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
-
-```{r, rq1-manipulation, include = FALSE}
+#' 
+#' ## Research question 1
+#' 
+#' We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
+#' 
+## ---- rq1-manipulation, include = FALSE---------------------------------------
 ## RQ1
 
 ## long dataframe with only relevant vars
@@ -370,7 +300,9 @@ df_rq1 <-
 
     df %>%
     select(id, lab, country,
-           att_min_bias, dg_min_bias_first, dg_min_bias_third) %>%
+           att_min_bias, dg_min_bias_first, dg_min_bias_third,
+           age, gender, political_orientation, income_when16) %>%
+    ## standardize
     mutate(att_min_bias = as.vector(scale(att_min_bias)),
            dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
            dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
@@ -388,11 +320,11 @@ df_rq1 <-
 
 ## peek at dataframe
 head(df_rq1)
-```
 
-We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
-
-```{r, rq1-combined-dv-group}
+#' 
+#' We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
+#' 
+## ---- rq1-combined-dv-group---------------------------------------------------
 ## model with country
 model_country_all <- 
 
@@ -406,6 +338,10 @@ model_country_all <-
 ## summary
 summary(model_country_all)
 
+## icc
+## country variance / (residual + country variance)
+## TODO insert values
+
 ## dotplot
 gg_caterpillar(ranef(model_country_all, condVar = TRUE), QQ = FALSE, 
               likeDotplot = FALSE)
@@ -416,9 +352,9 @@ df_rq1 %>%
   ggplot(aes(min_bias, y = mdl, colour = country, group = country)) + 
   geom_smooth(se = F, method = lm) +
   theme_bw()
-```
 
-``` {r, rq1-combined-dv-dummy}
+#' 
+## ---- rq1-combined-dv-dummy---------------------------------------------------
 ## country
 model_country_dummy <- 
 
@@ -432,6 +368,7 @@ summary(model_country_dummy)
 
 ## icc
 ## country variance / (residual + country variance)
+## TODO insert values
 
 ## dotplot
 gg_caterpillar(ranef(model_country_dummy, condVar = TRUE), QQ = FALSE, 
@@ -453,6 +390,7 @@ coefs_model <- coef(model_country_dummy)
 
 ## print random effects and best line
 ## shown is just dg_third_dummy
+## NB this will be meaningless with two countries
 coefs_model$country %>%
   mutate(country = rownames(coefs_model$country),
          intercept = `(Intercept)`) %>% 
@@ -461,26 +399,81 @@ coefs_model$country %>%
   geom_smooth(se = F, method = lm) +
   geom_label(nudge_y = 0.0025, alpha = 0.5) +
   theme_bw()
-```
 
-## Research question 2
+#' 
+## ----df-rq1-additional, include = FALSE----------------------------------------
 
-For the individual level analysis of research question 2, we have three main
-moderators of interest: permeability, (in-group and out-group) trust, and
-self-esteem. We compare various models:
+##### demographics
+## include demographic variables as robustness check
 
-```{r df-rq2, include = FALSE}
+## model with country
+model_country_all_demographics <- 
+
+    lmerTest::lmer(min_bias ~ measure + age + income_when16 + political_orientation +
+                       (1 | id)  + 
+                       (measure | country/lab),
+                   data = df_rq1
+                   ## , contrasts = list(measure = "contr.sum")
+                   )
+
+## summary
+summary(model_country_all_demographics)
+
+## run anova to check significance of demographic vars
+anova(model_country_all_demographics, ddf = "Kenward-Roger")
+
+##################################################
+#' 
+#' ## Research question 2
+#' 
+#' For the individual level analysis of research question 2, we have
+#' three main moderators of interest: permeability, trust (both
+#' interpersonal and institutional), and self-esteem. We compare
+#' various models:
+#'
+#' NB trust_in_out is the same as interpersonal trust
+#' 
+## ----df-rq2, include = FALSE--------------------------------------------------
+
+## PCA for family ties (following Alesina & Giuliano, 2010)
+family_ties_pca <-
+
+    prcomp(select(df, starts_with("family_tie_"), -family_tie_sum),
+           center = TRUE,
+           scale. = TRUE)
+
+## extract first component
+family_ties_pc1 <-
+
+    predict(pca_family_ties, df) %>% 
+    data.frame() %>%
+    mutate(family_tie_pc1 = PC1) %>%
+    select(family_tie_pc1)
+
+## add pc1 to df 
+df <-
+
+    bind_cols(df, family_ties_pc1)
+
 ## long dataframe with only relevant vars
 df_rq2 <-
-
+    
     df %>%
     select(id, lab, country, 
           att_min_bias, dg_min_bias_first, dg_min_bias_third,
-          self_esteem, trust_in_out, permeability) %>%
-    rename(trust = trust_in_out) %>%
-  mutate(att_min_bias = as.vector(scale(att_min_bias)),
+          self_esteem, trust_in_out, trust_institution, permeability,
+          embeddedness, family_tie_pc1) %>%
+    ## standardize outcomes
+    mutate(att_min_bias = as.vector(scale(att_min_bias)),
            dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
            dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
+    ## standardize predictors
+    mutate(self_esteem = as.vector(scale(self_esteem)),
+           trust_in_out = as.vector(scale(trust_in_out)),
+           trust_institution = as.vector(scale(trust_institution)),
+           permeability = as.vector(scale(permeability)),
+           embeddedness = as.vector(scale(embeddedness))         
+           ) %>%
     pivot_longer(cols = c(contains("min_bias")), 
                  names_to = "measure",
                  values_to = "min_bias") %>%
@@ -495,16 +488,16 @@ df_rq2 <-
 
 ## peek at dataframe
 head(df_rq2)
-``` 
 
-```{r rq2-models}
+#' 
+## ----rq2-models---------------------------------------------------------------
 ## minimal model
 model_rq2_min <-
     
     lmerTest::lmer(
         min_bias ~ measure +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
 ## model with esteem
@@ -513,25 +506,25 @@ model_rq2_esteem <-
     lmerTest::lmer(
         min_bias ~ measure * self_esteem +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
-## model with trust
-model_rq2_trust <-
+## model with trust (in/out)
+model_rq2_trust_in_out <-
     
     lmerTest::lmer(
-        min_bias ~ measure * trust +  
+        min_bias ~ measure * trust_in_out +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
-## model with esteem and trust
-model_rq2_esteem_trust <-
+## model with trust (institutional)
+model_rq2_trust_institution <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust) +  
+        min_bias ~ measure * trust_institution +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
 ## model permeability
@@ -540,42 +533,121 @@ model_rq2_permeability <-
     lmerTest::lmer(
         min_bias ~ measure * permeability +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+        data = df_rq2)
+
+## model with esteem and trust
+model_rq2_esteem_trust_in_out <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * (self_esteem + trust_in_out) +  
+          (1 | id)  + 
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+        data = df_rq2)
+
+## model with esteem and trust (both in/out and institution)
+model_rq2_esteem_trust_both <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * (self_esteem + trust_in_out + trust_institution) +  
+          (1 | id)  + 
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
 ## maximal model
 model_rq2_max <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust + permeability) +  
+        min_bias ~ measure * (self_esteem + trust_in_out + trust_institution + permeability) +  
           (1 | id)  + 
-          (self_esteem + trust + permeability | country/lab),
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
         data = df_rq2)
 
 ## compare models
-anova(model_rq2_min, 
-      model_rq2_esteem, 
-      model_rq2_trust,
-      model_rq2_esteem_trust,
-      model_rq2_permeability,
-      model_rq2_max)
-
-## excplicitly AIC comparison, although above considers it with ML
-AIC(model_rq2_min, 
+anova(
+    model_rq2_min, 
     model_rq2_esteem, 
-    model_rq2_trust,
-    model_rq2_esteem_trust,
-    model_rq2_permeability, 
-    model_rq2_max)
-```
+    model_rq2_trust_in_out,
+    model_rq2_trust_institution,
+    model_rq2_permeability,
+    model_rq2_esteem_trust_in_out,
+    model_rq2_esteem_trust_both,
+    model_rq2_max
+)
 
+## explicitly AIC comparison, although above considers it with ML
+AIC(
+    model_rq2_min, 
+    model_rq2_esteem, 
+    model_rq2_trust_in_out,
+    model_rq2_trust_institution,
+    model_rq2_permeability,
+    model_rq2_esteem_trust_in_out,
+    model_rq2_esteem_trust_both,
+    model_rq2_max
+)
 
-## Research question 3
+#' 
+## ----df-rq2-additional, include = FALSE----------------------------------------
 
-For research question 3, we assess whether real-world bias (towards
-the nation and/or family) is predicted by minimal group bias. 
+##### other indicators
+## additional individual-level analyses that include other measures
+## linked to permeability as robustness checks
 
-```{r measures-real-world-bias}
+## model embeddedness
+model_rq2_embeddedness <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * embeddedness +  
+          (1 | id)  + 
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+        data = df_rq2)
+
+## model family ties
+model_rq2_family_ties <-
+    
+    lmerTest::lmer(
+        min_bias ~ measure * family_tie_pc1 +  
+          (1 | id)  + 
+          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+        data = df_rq2)
+
+## AIC comparison
+AIC(
+    model_rq2_permeability,
+    model_rq2_embeddedness,
+    model_rq2_family_ties
+)
+
+##### demographics
+## include demographic variables
+## as robustness checks
+## NB this will be the model with lowest AIC, here using min for demonstration purposes
+
+## model with country
+model_rq2_min_demographics <- 
+
+    lmerTest::lmer(
+                  min_bias ~ measure + age + income_when16 + political_orientation +
+                      (1 | id)  + 
+                      (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
+                  data = df_rq1
+              )
+
+## summary
+summary(model_rq2_min_demographics)
+
+## run anova to check significance of demographic vars
+anova(model_rq2_min_demographics, ddf = "Kenward-Roger")
+
+#' 
+#' 
+#' ## Research question 3
+#' 
+#' For research question 3, we assess whether real-world bias (towards
+#' the nation and/or family) is predicted by minimal group bias. 
+#' 
+## ----measures-real-world-bias-------------------------------------------------
 ## longish dataframe with relevant vars
 ## NB for only one measure
 df_rq3_att <-
@@ -619,15 +691,15 @@ df_rq3_dg_third <-
 
 ## peek at dataframe
 head(df_rq3_att)
-```
 
-To avoid three-way interactions, we model each measure separately. 
-
-### Attitude
-
-We first demonstrate the analysis with the attitude measures.
-
-``` {r rq3-att}
+#' 
+#' To avoid three-way interactions, we model each measure separately. 
+#' 
+#' ### Attitude
+#' 
+#' We first demonstrate the analysis with the attitude measures.
+#' 
+## ----rq3-att------------------------------------------------------------------
 ## real-world
 model_real_world <- 
 
@@ -639,12 +711,8 @@ model_real_world <-
 ## summary
 summary(model_real_world)
 
-## ## run anova
-## anova(model_real_world, ddf = "Kenward-Roger")
-
-``` 
-
-```{r plot-rq3-att}
+#' 
+## ----plot-rq3-att-------------------------------------------------------------
 
 model_coefs <- 
   
@@ -671,13 +739,13 @@ ggplot(data = df_rq3_rand,
   facet_wrap(. ~ group_type) +
   guides(colour = "none") +
   theme_bw()
-```
 
-### First-party DG
-
-We then repeat with the first-party DG.
-
-``` {r rq3-dgfirst}
+#' 
+#' ### First-party DG
+#' 
+#' We then repeat with the first-party DG.
+#' 
+## ----rq3-dgfirst--------------------------------------------------------------
 ## real-world
 model_real_world <- 
 
@@ -689,12 +757,8 @@ model_real_world <-
 ## summary
 summary(model_real_world)
 
-## ## run anova
-## anova(model_real_world, ddf = "Kenward-Roger")
-
-``` 
-
-```{r plot-rq3-dgfirst}
+#' 
+## ----plot-rq3-dgfirst---------------------------------------------------------
 
 model_coefs <- 
   
@@ -721,13 +785,13 @@ ggplot(data = df_rq3_rand,
   facet_wrap(. ~ group_type) +
   guides(colour = "none") +
   theme_bw()
-```
 
-### Third-party DG
-
-We finally demonstrate the analysis with the third-party DG.
-
-``` {r rq3-dgthird}
+#' 
+#' ### Third-party DG
+#' 
+#' We finally demonstrate the analysis with the third-party DG.
+#' 
+## ----rq3-dgthird--------------------------------------------------------------
 ## real-world
 model_real_world <- 
 
@@ -739,12 +803,8 @@ model_real_world <-
 ## summary
 summary(model_real_world)
 
-## ## run anova
-## anova(model_real_world, ddf = "Kenward-Roger")
-
-``` 
-
-```{r plot-rq3-dgthird}
+#' 
+## ----plot-rq3-dgthird---------------------------------------------------------
 
 model_coefs <- 
   
@@ -771,6 +831,42 @@ ggplot(data = df_rq3_rand,
   facet_wrap(. ~ group_type) +
   guides(colour = "none") +
   theme_bw()
-```
 
+#' 
+## ----df-rq3-additional, include = FALSE----------------------------------------
 
+##### demographics
+## include demographic variables as robustness checks
+
+## NB this will be with all models, here using attitudes measures for
+## demonstration purposes
+
+## model with country
+model_real_world_demographics <- 
+
+    lmerTest::lmer(
+                  att_real_bias ~ att_min_bias * group_type + age + income_when16 + political_orientation +
+                      (1 | id)  + 
+                       (att_min_bias + group_type | country/lab),
+                  data = df_rq3_att
+              )
+
+## summary
+summary(model_real_world_demographics)
+
+## run anova to check significance of demographic vars
+anova(model_rq2_min_demographics, ddf = "Kenward-Roger")
+
+##### first cousins
+## run the same as above excluding those with no first cousins
+## i.e.
+df %>% count(num_cousins) # would exclude 19 participants from pilot
+
+#' 
+## ----df-rq1-rq3-additional, include = FALSE-------------------------------------
+
+## for RQ1--RQ3, the models are repeated (except for RQ2 where lowest
+## AIC is), but excluding those who demonstrated familiarity
+df %>%
+    count(mgp_familiarity, mgp_followup) # would be 3 participants
+                                         # from pilot, based on both questions
