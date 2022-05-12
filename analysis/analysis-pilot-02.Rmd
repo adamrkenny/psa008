@@ -16,7 +16,7 @@ editor_options:
 
 This document describes the analysis pipeline for PSA 008 Minimal Groups, using the pilot study.
 
-```{r setup, include = FALSE}
+```{r setup, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
@@ -143,12 +143,6 @@ kbl(print_tableone) %>%
 
 ```
 
-<!-- As we aim to analyse regional variation within certain countries, we looked at the geographical distribution in residence. Figure FIXME shows there was variation in current residence, with participants living in . (NB some UK regions have no counts due to mismatch between database in R package used; lightest colour has highest percentage of about 10%). FIXME stated they grew up in the same region as they currently live in.  -->
-
-```{r pressure, eval = FALSE, echo=FALSE, fig.cap="Geographical distribution", out.width = '100%'}
-knitr::include_graphics("map_us_uk.png")
-```
-
 # Analysis
 
 The (minimal group) dependent measures are based on the
@@ -205,287 +199,77 @@ df2 <-
     mutate(group = factor(group, levels = c("min", "fam", "nat"),
                           labels = c("minimal", "family", "national")))
 
-bias_summary <- 
-    
-    df2 %>%
-    Rmisc::summarySE(measurevar = "value",
-              groupvars = c("group", "type", "country"),
-              na.rm = TRUE)
+for (measure in c("att", "dg_first", "dg_third")) {
 
-
-df2 %>% summarise(mean = mean(value))
-
-scales_x <- list(
-  `att` = scale_y_continuous(limits = c(-6, 6), breaks = seq(-6, 6, 2)),
-  `dg_first` = scale_y_continuous(limits = c(-20, 20), breaks = seq(-20, 20, 10)),
-  `dg_third` = scale_y_continuous(limits = c(-20, 20), breaks = seq(-20, 20, 10))
-)
-
-bias_summary_att <-
+    bias_summary_measure <-
 
     df2 %>%
-    filter(type == "att") %>%
+    filter(type == measure) %>%
     Rmisc::summarySE(measurevar = "value",
                      groupvars = c("group", "country"),
                      na.rm = TRUE)
 
-plot_bias_att <-
-    
-    df2 %>%
-    filter(type == "att") %>%
-    mutate(intercept_no_bias = 0) %>%  
-    ## ## mutate(intercept_no_bias = if_else(type == "dg_third", 10, 0)) %>% 
-    ## mutate(min_value = if_else(type == "att", -7, -10)) %>% 
-    ## mutate(max_value = if_else(type == "att", 7, 10)) %>%
-    ## ## mutate(type = recode(type, 
-    ## ##                     "att" = "attitudes", 
-    ## ##                     "" = relationship_label)) %>% 
-    ggplot(aes(x = group,
-               y = value,
-               fill = group, # group,
-               colour = group # group
-               )) +
-    geom_flat_violin(position = position_nudge(x = .25, 
+    assign(paste0("plot_bias_", measure),
+           
+           df2 %>%
+           filter(type == measure) %>%
+           mutate(intercept_no_bias = 0) %>%
+           ggplot(aes(x = group,
+                      y = value,
+                      fill = group, 
+                      colour = group
+                      )) +
+    geom_flat_violin(position = position_nudge(x = .25,
                                                y = 0),
-                     adjust = 2, 
+                     adjust = 2,
                      trim = TRUE,
                      na.rm = TRUE,
                      alpha = 0.5) +
     geom_point(position =
-                   position_jitter(width = .05, height = .05), 
-               size = 2, 
+                   position_jitter(width = .05, height = .05),
+               size = 2,
                alpha = 0.4,
                na.rm = TRUE
                ) +
-    geom_errorbar(data = bias_summary_att,
-                  aes(ymin = value - ci, 
+    geom_errorbar(data = bias_summary_measure,
+                  aes(ymin = value - ci,
                       ymax = value + ci),
                   position = position_nudge(y = 0.25),
                   colour = "grey40",
-                  width = 0, 
+                  width = 0,
                   size = 1.5
                   ) +
-    geom_point(data = bias_summary_att,
+    geom_point(data = bias_summary_measure,
                position = position_nudge(y = 0.25),
                size = 4,
                shape = 19,
                fill = "black",
                colour = "grey40"
                ) +
-    ## geom_boxplot(alpha = 0.3,
-    ##              width = .1,
-    ##              colour = "black") + 
     geom_hline(aes(yintercept = intercept_no_bias),
                linetype = "dashed",
                colour = "grey40") +
-    ## geom_hline(aes(yintercept = max_value), colour = "transparent") +
-    ## geom_hline(aes(yintercept = min_value), colour = "transparent") +
-    ## coord_flip() +
-    ## facetscales::facet_grid_sc(
-    ##                  nationality ~ type,
-    ##                  ## rows = vars(nationality),
-    ##                  ## cols = vars(type),
-    ##                  scales = list(x = scales_x)) +
     facet_grid(. ~ country,
-        # nationality ~ type, 
                scales = "free",
                space = "free",
-               # labeller = label_parsed,
-               shrink = TRUE, 
+               shrink = TRUE,
                drop = TRUE
                ) +
     scale_y_continuous(breaks = c(seq(-6,6,1)), limits = c(-6, 6)) +
     scale_fill_brewer(palette = "Set2") +
     scale_colour_brewer(palette = "Set2") +
-    labs(x = "", # "group type",
+    labs(x = "",
          y = "bias") +
-    guides(fill = "none", 
-           colour = "none"
-           ) +
-    theme_classic() +
-     theme(text = element_text(size = 20),
-          axis.text.x=element_text(angle = 45, hjust = 1),
-                                        # axis.text.y = element_blank(),
-          # strip.background = element_blank(), 
-          strip.placement = "outside")
-
-bias_summary_dg_first <-
-
-    df2 %>%
-    filter(type == "dg_first") %>%
-    Rmisc::summarySE(measurevar = "value",
-                     groupvars = c("group", "country"),
-                     na.rm = TRUE)
-
-plot_bias_dg_first <-
-    
-    df2 %>%
-    filter(type == "dg_first") %>%
-    mutate(intercept_no_bias = 0) %>%  
-    ## ## mutate(intercept_no_bias = if_else(type == "dg_third", 10, 0)) %>% 
-    ## mutate(min_value = if_else(type == "att", -7, -10)) %>% 
-    ## mutate(max_value = if_else(type == "att", 7, 10)) %>%
-    ## ## mutate(type = recode(type, 
-    ## ##                     "att" = "attitudes", 
-    ## ##                     "" = relationship_label)) %>% 
-    ggplot(aes(x = group,
-               y = value,
-               fill = group, # group,
-               colour = group # group
-               )) +
-    geom_flat_violin(position = position_nudge(x = .25, 
-                                               y = 0),
-                     adjust = 2, 
-                     trim = TRUE,
-                     na.rm = TRUE,
-                     alpha = 0.5) +
-    geom_point(position =
-                   position_jitter(width = .05, height = .05), 
-               size = 2, 
-               alpha = 0.4,
-               na.rm = TRUE
-               ) +
-    geom_errorbar(data = bias_summary_dg_first,
-                  aes(ymin = value - ci, 
-                      ymax = value + ci),
-                  position = position_nudge(y = 0.25),
-                  colour = "grey40",
-                  width = 0, 
-                  size = 1.5
-                  ) +
-    geom_point(data = bias_summary_dg_first,
-               position = position_nudge(y = 0.25),
-               size = 4,
-               shape = 19,
-               fill = "black",
-               colour = "grey40"
-               ) +
-    ## geom_boxplot(alpha = 0.3,
-    ##              width = .1,
-    ##              colour = "black") + 
-    geom_hline(aes(yintercept = intercept_no_bias),
-               linetype = "dashed",
-               colour = "grey40") +
-    ## geom_hline(aes(yintercept = max_value), colour = "transparent") +
-    ## geom_hline(aes(yintercept = min_value), colour = "transparent") +
-    ## coord_flip() +
-    ## facetscales::facet_grid_sc(
-    ##                  nationality ~ type,
-    ##                  ## rows = vars(nationality),
-    ##                  ## cols = vars(type),
-    ##                  scales = list(x = scales_x)) +
-    facet_grid(. ~ country,
-        # nationality ~ type, 
-               scales = "free",
-               space = "free",
-               # labeller = label_parsed,
-               shrink = TRUE, 
-               drop = TRUE
-               ) +
-    scale_y_continuous(breaks = c(seq(-20,20,4)), limits = c(-20, 20)) +
-    scale_fill_brewer(palette = "Set2") +
-    scale_colour_brewer(palette = "Set2") +
-    labs(x = "", # "group type",
-         y = "bias") +
-    guides(fill = "none", 
+    guides(fill = "none",
            colour = "none"
            ) +
     theme_classic() +
     theme(text = element_text(size = 20),
           axis.text.x=element_text(angle = 45, hjust = 1),
-                                        # axis.text.y = element_blank(),
-          # strip.background = element_blank(), 
           strip.placement = "outside")
+    )    
 
-
-
-bias_summary_dg_third <-
-
-    df2 %>%
-    filter(type == "dg_third") %>%
-    Rmisc::summarySE(measurevar = "value",
-                     groupvars = c("group", "country"),
-                     na.rm = TRUE)
-
-plot_bias_dg_third <-
-    
-    df2 %>%
-    filter(type == "dg_third") %>%
-    mutate(intercept_no_bias = 0) %>%  
-    ## ## mutate(intercept_no_bias = if_else(type == "dg_third", 10, 0)) %>% 
-    ## mutate(min_value = if_else(type == "att", -7, -10)) %>% 
-    ## mutate(max_value = if_else(type == "att", 7, 10)) %>%
-    ## ## mutate(type = recode(type, 
-    ## ##                     "att" = "attitudes", 
-    ## ##                     "" = relationship_label)) %>% 
-    ggplot(aes(x = group,
-               y = value,
-               fill = group, # group,
-               colour = group # group
-               )) +
-    geom_flat_violin(position = position_nudge(x = .25, 
-                                               y = 0),
-                     adjust = 2, 
-                     trim = TRUE,
-                     na.rm = TRUE,
-                     alpha = 0.5) +
-    geom_point(position =
-                   position_jitter(width = .05, height = .05), 
-               size = 2, 
-               alpha = 0.4,
-               na.rm = TRUE
-               ) +
-    geom_errorbar(data = bias_summary_dg_third,
-                  aes(ymin = value - ci, 
-                      ymax = value + ci),
-                  position = position_nudge(y = 0.25),
-                  colour = "grey40",
-                  width = 0, 
-                  size = 1.5
-                  ) +
-    geom_point(data = bias_summary_dg_third,
-               position = position_nudge(y = 0.25),
-               size = 4,
-               shape = 19,
-               fill = "black",
-               colour = "grey40"
-               ) +
-    ## geom_boxplot(alpha = 0.3,
-    ##              width = .1,
-    ##              colour = "black") + 
-    geom_hline(aes(yintercept = intercept_no_bias),
-               linetype = "dashed",
-               colour = "grey40") +
-    ## geom_hline(aes(yintercept = max_value), colour = "transparent") +
-    ## geom_hline(aes(yintercept = min_value), colour = "transparent") +
-    ## coord_flip() +
-    ## facetscales::facet_grid_sc(
-    ##                  nationality ~ type,
-    ##                  ## rows = vars(nationality),
-    ##                  ## cols = vars(type),
-    ##                  scales = list(x = scales_x)) +
-    facet_grid(. ~ country,
-        # nationality ~ type, 
-               scales = "free",
-               space = "free",
-               # labeller = label_parsed,
-               shrink = TRUE, 
-               drop = TRUE
-               ) +
-    scale_y_continuous(breaks = c(seq(-20,20,4)), limits = c(-20, 20)) +
-    scale_fill_brewer(palette = "Set2") +
-    scale_colour_brewer(palette = "Set2") +
-    labs(x = "", # "group type",
-         y = "bias") +
-    guides(fill = "none", 
-           colour = "none"
-           ) +
-    theme_classic() +
-    theme(text = element_text(size = 20),
-          axis.text.x=element_text(angle = 45, hjust = 1),
-                                        # axis.text.y = element_blank(),
-          # strip.background = element_blank(), 
-          strip.placement = "outside")
+}
 
 plot_bias <- 
 
@@ -500,8 +284,6 @@ plot_bias <-
     theme(plot.tag = element_text(face = "bold"))
 
 plot_bias
-
-
 
 
 ```
