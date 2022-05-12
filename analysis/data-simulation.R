@@ -131,12 +131,20 @@ permeability_score <-
         , mean = -0.002, sd = 1.003 # from Schulz data, column KII
           ) 
 
-## generate trust
-trust_score <- 
+## generate trust in-out
+trust_1_score <- 
     
     rnorm(n_ids_per_country 
         , mean = -0.003, sd = 1.006 # from Schulz data, column wvs_OutInTrust_std
-            ) 
+          )
+
+## generate trust institutional
+trust_2_score <- 
+    
+    rnorm(n_ids_per_country 
+        , mean = -0.005, sd = 1.006 # from Schulz data, column wvs_trust_std
+          )
+
 ## generate self-esteem
 self_esteem_score <- 
     
@@ -149,7 +157,8 @@ self_esteem_score <-
 fake_data <-
 
     fake_data %>%
-    mutate(trust = rep(trust_score, n_labs_countries),
+    mutate(trust_1 = rep(trust_1_score, n_labs_countries),
+           trust_2 = rep(trust_2_score, n_labs_countries),
            self_esteem = rep(self_esteem_score, n_labs_countries),
            permeability = rep(permeability_score, n_labs_countries)
            ) %>%
@@ -157,8 +166,10 @@ fake_data <-
     mutate(
         self_esteem = as.vector(
              scale(self_esteem)),
-        trust = as.vector(
-             scale(trust)),
+        trust_1 = as.vector(
+            scale(trust_1)),
+        trust_2 = as.vector(
+             scale(trust_2)),
         permeability = as.vector(
              scale(permeability))
     )
@@ -252,7 +263,6 @@ inc_cats <-
 
     c("Far below average", "Below average", "Average", "Above average", "Far above average") 
 
-
 ## add to data
 fake_data <-
 
@@ -272,7 +282,10 @@ fake_data <-
 fake_data <-
 
     fake_data %>%
-    select(-contains("_self"), -contains("_in"), -contains("_out"))
+    select(-contains("_self"), -contains("_in"), -contains("_out")) %>%
+    ## rename trust 1 and trust 2
+    rename(trust_in_out = trust_1,
+           trust_institution = trust_2)
 
 ##################################################
 ## wrangle data
@@ -289,7 +302,8 @@ df_rq1 <-
 
     fake_data %>%
     select(id, lab, country,
-           att_min_bias, dg_min_bias_first, dg_min_bias_third) %>%
+           att_min_bias, dg_min_bias_first, dg_min_bias_third,
+           age, gender, political, income) %>%
     mutate(att_min_bias = as.vector(scale(att_min_bias)),
            dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
            dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
@@ -314,7 +328,8 @@ df_rq2 <-
     fake_data %>%
     select(id, lab, country, 
           att_min_bias, dg_min_bias_first, dg_min_bias_third,
-          self_esteem, trust, permeability) %>%
+          self_esteem, trust_in_out, trust_institution, permeability,
+          age, gender, political, income) %>%
     mutate(att_min_bias = as.vector(scale(att_min_bias)),
            dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
            dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
@@ -340,7 +355,8 @@ df_rq3 <-
     fake_data %>%
     select(id, lab, country,
            att_min_bias, att_nat_bias, att_fam_bias,
-           dg_min_bias_first, dg_nat_bias_first, dg_fam_bias_first) %>%
+           dg_min_bias_first, dg_nat_bias_first, dg_fam_bias_first,
+           age, gender, political, income) %>%
     pivot_longer(cols = c(att_nat_bias, att_fam_bias),, 
                  names_to = "group_type",
                  values_to = "att_real_bias") %>%
