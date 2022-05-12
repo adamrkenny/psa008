@@ -1,3 +1,15 @@
+## calculate mean, sd, max, min for a given variable
+## dependencies: tidyverse
+summary_stats <-  function(x, p) {
+
+    ## create tibble with seperate columns
+    x %>%
+        summarise_at(c(p), c(mean, sd, min, max), na.rm = TRUE) %>%
+        rename(mean = fn1, sd = fn2, min = fn3, max = fn4) %>%
+        mutate(es_d = mean/sd) 
+    
+}
+
 ## create custom function to truncate values
 ## as bias ranges from 0 to 10
 rtruncnorm <- function(N, mean = 0, sd = 1, min = -Inf, max = Inf) {
