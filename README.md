@@ -15,21 +15,19 @@ latter was a means-test of the full procedure of the proposed study
 
 ## about [analysis](./analysis) ##
 
-Most users will prefer to open the relevant Rmd script in rstudio, and
-knit the file. This will compile a html file with all the text, code
-chunks, and output by default. Compilation might take a couple of
-minutes, especially if packages have to be installed (which should be
-done automatically, if necessary, upon compilation).
+Most users will want a local copy of the files to run the code. Do to
+so easily, one can download the entire project from GitHub by clicking
+"Code" then "Download Zip"; unzip and you will have a
+copy. Alternatively, one can clone the repo.
 
-For users who prefer to just run the code using R scripts,
+As most users prefer to run code using R scripts,
 [purled](https://bookdown.org/yihui/rmarkdown-cookbook/purl.html)
-versions of the Rmd files have been also provided.
+versions of the original Rmd files have been provided.
 
 ### pipeline
 
-The Rmd script
- [analysis-pipeline.Rmd](./analysis/analysis-pipeline.Rmd) takes the
- artificial data created in
+The R script [analysis-pipeline.R](./analysis/analysis-pipeline.R)
+ takes the artificial data created in
  [data-simulation.R](./analysis/data-simulation.R) and runs through
  the main analyses described in the manuscript. The purpose of the
  analysis pipeline is to troubleshoot models --- some errors might be
@@ -43,21 +41,21 @@ The R script [analysis-pilot-01.R](./analysis/analysis-pilot-01.R)
 
 ### pilot 02
 
-The Rmd script
- [analysis-pilot-02.Rmd](./analysis/analysis-pilot-02.Rmd) takes the
- processed pilot data and runs through the main analyses described in
- the manuscript and in the analysis pipeline.
+The R script [analysis-pilot-02.R](./analysis/analysis-pilot-02.R)
+ takes the processed pilot data and runs through the main analyses
+ described in the manuscript and in the analysis pipeline.
 
 ### power
 
-The Rmd script [analysis-power.Rmd](./analysis/analysis-power.Rmd)
-contains the power analysis, using the artificial data created in
+The R script [analysis-power.R](./analysis/analysis-power.R) contains
+the power analysis, using the artificial data created in
 [data-simulation.R](./analysis/data-simulation.R) and the models
 specified in the analysis pipeline. The power analysis was run with
-1000 simulations; users might want to run with fewere simulations for
-efficiency. We acknowledge the use of the University of Oxford
-Advanced Research Computing (ARC) facility in carrying out the power
-analysis (http://dx.doi.org/10.5281/zenodo.22558).
+1000 simulations; users might want to run with fewer simulations (n =
+100 and/or set a different number of cores) for efficiency. We
+acknowledge the use of the University of Oxford Advanced Research
+Computing (ARC) facility in carrying out the power analysis
+(http://dx.doi.org/10.5281/zenodo.22558).
 
 ### other file(s)
 

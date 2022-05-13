@@ -620,8 +620,8 @@ AIC(
 )
 
 ##### demographics
-## include demographic variables
-## as robustness checks
+## include demographic variables as robustness checks
+
 ## NB this will be the model with lowest AIC, here using min for demonstration purposes
 
 ## model with country
