@@ -86,7 +86,7 @@ We conduct a power analysis for each research question (RQ), using one of the pr
 ```{r, basic-settings}
 ## number of simulations
 ## n_sim <- 10 # to troubleshoot
-n_sim <- 1000 # actual run
+n_sim <- 100 # actual run
 
 ## sigma in models
 residual_sd <- 1
@@ -235,9 +235,10 @@ fixed <- c(
   min_bias_es, # bias
   rep(0.2, 2), # measure (with two levels)
   0.11, # self_esteem
-  0.10, # trust
+  0.10, # trust interpersonal
+  0.10, # trust institutional
   0.10, # permeability
-  rep(0.1, 6) # measure interaction with moderator  (with two levels)
+  rep(0.1, 8) # measure interaction with moderator  (with two levels)
   )
 
 ## random intercepts
@@ -262,6 +263,16 @@ random <- list(
   0.1, # measure within slopes
   0.1, # measure within slopes
   0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
+  0.1, # measure within slopes
   0.1 # measure within slopes
 )
 
@@ -269,9 +280,10 @@ random <- list(
 model_rq2 <- 
   
   makeLmer(
-  min_bias ~ measure * (self_esteem + trust + permeability) + 
+  min_bias ~ measure * 
+    (self_esteem + trust_in_out + trust_institutional + permeability) + 
     (1 | id) + 
-    (self_esteem + trust + permeability | country/lab),
+    (self_esteem + trust_in_out + trust_institutional + permeability | country/lab),
   fixef = fixed, 
   VarCorr = random, 
   sigma = residual_sd, 
@@ -309,8 +321,7 @@ p_curve_rq2_participants <-
              test = fcompare(min_bias ~ measure * (trust + permeability)), 
              within="country+measure",
              nsim = n_sim,
-             breaks = c(seq(130, 150, by = 10))
-             )
+             breaks = c(seq(70, 150, by = 10))
              
 ## assign to object
 assign(
@@ -348,7 +359,11 @@ power_curve_rq2 <-
   theme_bw()
 
 power_curve_rq2
+
+save.image(file = paste0("power-analysis-rq2-", n_sim, ".RData"))
 ```
+
+
 
 ## Research question 3
 
@@ -414,7 +429,7 @@ p_curve_rq3_participants <-
              test = fcompare(att_real_bias ~ group_type),
              within="country+group_type", 
              nsim = n_sim,
-             breaks = c(seq(130, 150, by = 10))
+             breaks = c(seq(70, 150, by = 10))
   )
 
 ## assign object for later reuse
@@ -443,7 +458,7 @@ power_curve_rq3 <-
              colour = as.factor(bias_es), group = as.factor(bias_es))) +
   geom_point() +
   geom_line() +
-  geom_errorbar(aes(ymin = lower, ymax = upper)) +
+  geom_errorbar(aes(ymin = lower,     ymax = upper)) +
   scale_x_continuous(breaks = c(seq(70, 150, by = 10))) +
   geom_hline(yintercept = 0.8, linetype = "dashed") +
   labs(x = "no. participants",
@@ -451,6 +466,13 @@ power_curve_rq3 <-
   guides(colour = "none") +
   theme_bw()
 ```
+
+```{r}
+load("./power-analysis-rq1-100.RData")
+load("./power-analysis-rq3-100.RData")
+
+```
+
 
 ### Generate plot
 
