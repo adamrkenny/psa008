@@ -113,6 +113,8 @@ t.test(df$dg_nat_bias_third)
 df2 <-
 
     df %>%
+    ## ## NB to generate standardized, uncomment next line
+    ## mutate(across(contains("_bias"), ~(scale(.) %>% as.vector))) %>%
     pivot_longer(cols = c(contains("_bias")),
                  names_to = "measure",
                  values_to = "value") %>%
@@ -127,6 +129,12 @@ df2 <-
     mutate(min_value = if_else(type == "att", -6, -20)) %>% 
     mutate(max_value = if_else(type == "att", 6, 20)) %>%
     mutate(interval_value = if_else(type == "att", 1, 4))
+    ## ## NB to produce better plot with standardized data
+    ## ## comment above and uncomment below next line
+    ## mutate(min_value = if_else(type == "att", -7, -7)) %>% 
+    ## mutate(max_value = if_else(type == "att", 7, 7)) %>%
+    ## mutate(interval_value = if_else(type == "att", 2, 2))
+
 
 ## generate plot of each measure, faceted by country
 for (measure in c("att", "dg_first", "dg_third")) {
@@ -219,12 +227,13 @@ plot_bias <-
         (plot_bias_dg_third +
          ggtitle("third-party bias"))
     ) +
-    plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
+    plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")",
+                    caption = "bias not standardized" # "standardized"
+                    ) &
     theme(plot.tag = element_text(face = "bold"))
 
 ## plot included as figure 1 in RR 
 plot_bias
-
 
 #' 
 ## ----rq2-descriptives-selfesteem----------------------------------------------
