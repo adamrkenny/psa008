@@ -112,6 +112,10 @@ modified version of the one shared among the PSA team on 2022-03-24,
 whose last updated date was 2022-02-15. Data can be obtained from
 [https://data.worldbank.org/indicator/PA.NUS.PPP](https://data.worldbank.org/indicator/PA.NUS.PPP).
 
+## about [figures](./figures) ##
+
+Contains figures included in the manuscript.
+
 ## about [matching](./matching) ##
 
 The R script [random-allocator.R](./matching/random-allocator.R) takes
