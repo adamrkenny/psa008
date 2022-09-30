@@ -319,6 +319,21 @@ df_rq1 <-
            dg_third_dummy = if_else(measure == "dg_third", 1, 0)
            )
 
+## extract dataframes with each measure
+for (measure_type in c("att", "dg_first", "dg_third")) {
+
+    ## filter by measure
+    df_rq1_measure_type <-
+        
+        df_rq1 %>%
+        filter(measure == measure_type)
+    
+    ## create object
+    assign(paste0("df_rq1_", measure_type), 
+           df_rq1_measure_type)
+    
+}  
+
 ##################################################
 ## RQ2
 
@@ -344,6 +359,21 @@ df_rq2 <-
            dg_first_dummy = if_else(measure == "dg_first", 1, 0),
            dg_third_dummy = if_else(measure == "dg_third", 1, 0)
            )
+
+## extract dataframes with each measure
+for (measure_type in c("att", "dg_first", "dg_third")) {
+
+    ## filter by measure
+    df_rq2_measure_type <-
+        
+        df_rq2 %>%
+        filter(measure == measure_type)
+    
+    ## create object
+    assign(paste0("df_rq2_", measure_type), 
+           df_rq2_measure_type)
+    
+}  
 
 ##################################################
 ## RQ3

@@ -80,7 +80,15 @@ fake_data %>%
   summarise(mean = mean(att_min_bias, na.rm = TRUE), 
             sd = sd(att_min_bias, na.rm = TRUE)) %>% 
   mutate_if(is.numeric, ~round(., 2)) %>% 
-  print(n = n_countries)
+    print(n = n_countries)
+
+## order factors
+df_rq1 <-
+
+    df_rq1 %>%
+    mutate(measure = factor(measure,
+                            levels = c("att", "dg_first", "dg_third")
+                            ))
 
 #' 
 #' We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
@@ -89,28 +97,46 @@ fake_data %>%
 #' 
 ## ---- rq1-combined-dv-group---------------------------------------------------
 ## model with country
-model_country_all <- 
+model_rq1_country_att <- 
 
-    lmerTest::lmer(min_bias ~ measure + 
-                       (1 | id)  + 
-                       (measure | country/lab),
-                   data = df_rq1
+    lmerTest::lmer(min_bias ~ 1 +
+                       ## measure + (1 | id)  + 
+                       (1 | country),
+                   data = df_rq1_att 
+                   ## , contrasts = list(measure = "contr.sum")
                    )
 
 ## summary
-summary(model_country_all)
+summary(model_rq1_country_att) 
 
 ## icc
 ## country variance / (residual + country variance)
 ## TODO insert values
 
 ## dotplot
-gg_caterpillar(ranef(model_country_all, condVar = TRUE), QQ = FALSE, 
-              likeDotplot = FALSE)
+gg_caterpillar(ranef(model_rq1_country_att, condVar = TRUE), QQ = FALSE, 
+               likeDotplot = FALSE)
+
+## built plot manually
+## from ranef help file
+## TODO plot each by themselves
+str(model_rq1_country_att_ranef <- ranef(model_rq1_country_att))
+str(model_rq1_country_att_ranef_df <- as.data.frame(model_rq1_country_att_ranef))
+model_rq1_country_att_ranef_df %>%
+    ggplot() +
+    aes(y = grp, x = condval) +
+    geom_point() +
+    ## facet_wrap(~term, scales = "free_x") +
+    geom_errorbarh(aes(xmin = condval - 2*condsd,
+                       xmax = condval + 2*condsd),
+                   height = 0) +
+    xlab("random effect") +
+    ylab("country") +
+    theme_bw()
 
 ## predict the scores based on the model
-df_rq1 %>% 
-  mutate(mdl = predict(model_country_all)) %>%
+df_rq1_att %>% 
+  mutate(mdl = predict(model_rq1_country_att)) %>%
   ggplot(aes(min_bias, y = mdl, colour = country, group = country)) + 
   geom_smooth(se = F, method = lm) +
   theme_bw() +
@@ -119,54 +145,25 @@ df_rq1 %>%
         axis.ticks = element_blank())
 
 #' 
-## ---- rq1-combined-dv-dummy---------------------------------------------------
-## country
-model_country_dummy <- 
+## ----df-rq1-intercept-variance, include = FALSE----------------------------------------
 
-    lmerTest::lmer(min_bias ~ att_dummy + dg_first_dummy + 
-                       (1 | id)  + 
-                       (att_dummy + dg_first_dummy + dg_third_dummy | country/lab),
-                   data = df_rq1)
+## model has to be re-run with REML = FALSE to compare
+model_rq1_country_att_ML <- 
 
-## summary
-summary(model_country_dummy)
+    lmerTest::lmer(min_bias ~ 1 + (1 | country),
+                   data = df_rq1_att,
+                   REML = FALSE
+                   )
 
-## icc
-## country variance / (residual + country variance)
-## TODO insert values
+## model without random intercept
+model_rq1_country_att_without_random_intercept <- 
 
-## dotplot
-gg_caterpillar(ranef(model_country_dummy, condVar = TRUE), QQ = FALSE, 
-              likeDotplot = TRUE)
+    lm(min_bias ~ 1,
+       data = df_rq1_att
+       )
 
-## graph with predicted country level min bias
-
-## predict the scores based on the model
-df_rq1 %>%
-  mutate(mdl = predict(model_country_dummy)) %>%
-  ggplot(aes(min_bias, y = mdl, colour = country, group = country)) + 
-  geom_smooth(se = FALSE, method = lm) +
-  theme_bw() +
-  guides(colour = "none") +
-  theme(axis.text.x = element_blank(),
-        axis.ticks = element_blank())
-
-## graph of random effects with line of best fit
-
-## save coefficients
-coefs_model <- coef(model_country_dummy)
-
-## print random effects and best line
-## shown is just dg_third_dummy
-## NB this will be more meaningful with actual data
-coefs_model$country %>%
-  mutate(country = rownames(coefs_model$country),
-         intercept = `(Intercept)`) %>% 
-  ggplot(aes(x = dg_third_dummy, y = intercept, label = country)) + 
-  geom_point() + 
-  geom_smooth(se = F, method = lm) +
-  geom_label(nudge_y = 0.15, alpha = 0.5) +
-  theme_bw()
+anova(model_rq1_country_att_ML, 
+      model_rq1_country_att_without_random_intercept)
 
 #' 
 ## ----df-rq1-additional, include = FALSE----------------------------------------
@@ -176,19 +173,23 @@ coefs_model$country %>%
 ## as robustness check
 
 ## model with country
-model_country_all_demographics <- 
+model_rq1_country_att_demographics <- 
 
-    lmerTest::lmer(min_bias ~ measure + age + income + political +
-                       (1 | id)  + 
-                       (measure | country/lab),
-                   data = df_rq1
+    lmerTest::lmer(min_bias ~ 1 + age + income + political +
+                       ## (1 | id)  + 
+                       (1 | country),
+                   data = df_rq1_att,
+                   contrasts = list(age = "contr.sum",
+                                    income = "contr.sum",
+                                    political = "contr.sum"
+                                    )
                    )
 
 ## summary
-summary(model_country_all_demographics)
+summary(model_rq1_country_att_demographics)
 
 ## run anova to check significance of demographic vars
-anova(model_country_all_demographics, ddf = "Kenward-Roger")
+anova(model_rq1_country_att_demographics, ddf = "Kenward-Roger")
 
 #' 
 #' ## Research question 2
@@ -209,73 +210,73 @@ head(df_rq2)
 model_rq2_min <-
     
     lmerTest::lmer(
-        min_bias ~ measure +  
-          (1 | id)  + 
-          (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        min_bias ~ 1 +  
+          ## (1 | id)  + 
+          (self_esteem + trust_in_out + trust_institution + permeability | country),
+        data = df_rq2_att)
 
 ## model with esteem
 model_rq2_esteem <-
     
     lmerTest::lmer(
-        min_bias ~ measure * self_esteem +  
-          (1 | id)  + 
+        min_bias ~ 1 + self_esteem +  
+          ## (1 | id)  + 
           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        data = df_rq2_att)
 
 ## model with trust (in/out)
 model_rq2_trust_in_out <-
     
     lmerTest::lmer(
-        min_bias ~ measure * trust_in_out +  
-          (1 | id)  + 
+        min_bias ~ 1 + trust_in_out +  
+          ## (1 | id)  + 
           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        data = df_rq2_att)
 
 ## model with trust (institutional)
 model_rq2_trust_institution <-
     
     lmerTest::lmer(
-        min_bias ~ measure * trust_institution +  
-          (1 | id)  + 
+        min_bias ~ 1 + trust_institution +  
+          ## (1 | id)  + 
           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        data = df_rq2_att)
 
 ## model permeability
 model_rq2_permeability <-
     
     lmerTest::lmer(
-        min_bias ~ measure * permeability +  
-          (1 | id)  + 
+        min_bias ~ 1 + permeability +  
+          ## (1 | id)  + 
           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        data = df_rq2_att)
 
 ## model with esteem and trust
 model_rq2_esteem_trust_in_out <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust_in_out) +  
-          (1 | id)  + 
+        min_bias ~ 1 + (self_esteem + trust_in_out) +  
+          ## (1 | id)  + 
           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        data = df_rq2_att)
 
 ## model with esteem and trust (both in/out and institution)
 model_rq2_esteem_trust_both <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust_in_out + trust_institution) +  
-          (1 | id)  + 
+        min_bias ~ 1 + (self_esteem + trust_in_out + trust_institution) +  
+          ## (1 | id)  + 
           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        data = df_rq2_att)
 
 ## maximal model
 model_rq2_max <-
     
     lmerTest::lmer(
-        min_bias ~ measure * (self_esteem + trust_in_out + trust_institution + permeability) +  
-          (1 | id)  + 
+        min_bias ~ 1 + (self_esteem + trust_in_out + trust_institution + permeability) +  
+          ## (1 | id)  + 
           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
-        data = df_rq2)
+        data = df_rq2_att)
 
 ## compare models
 anova(
@@ -311,7 +312,7 @@ AIC(
 ## graph with predicted country level min bias
 
 ## predict the scores based on the model
-df_rq2 %>%
+df_rq2_att %>%
   mutate(mdl = predict(model_rq2_permeability)) %>%
   ggplot(aes(permeability, y = mdl, colour = country, group = country)) + 
   geom_smooth(se = FALSE, method = lm) +
@@ -351,8 +352,8 @@ coefs_model$country %>%
 ## model_rq2_embeddedness <-
     
 ##     lmerTest::lmer(
-##         min_bias ~ measure * embeddedness +  
-##           (1 | id)  + 
+##         min_bias ~ 1 + embeddedness +  
+##           ## (1 | id)  + 
 ##           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
 ##         data = df_rq2)
 
@@ -360,8 +361,8 @@ coefs_model$country %>%
 ## model_rq2_family_ties <-
     
 ##     lmerTest::lmer(
-##         min_bias ~ measure * family_tie_pc1 +  
-##           (1 | id)  + 
+##         min_bias ~ 1 + family_tie_pc1 +  
+##           ## (1 | id)  + 
 ##           (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
 ##         data = df_rq2)
 
@@ -383,8 +384,8 @@ coefs_model$country %>%
 ## model_rq2_min_demographics <- 
 
 ##     lmerTest::lmer(
-##                   min_bias ~ measure + age + income_when16 + political_orientation +
-##                       (1 | id)  + 
+##                   min_bias ~ 1 + age + income_when16 + political_orientation +
+##                       ## (1 | id)  + 
 ##                       (self_esteem + trust_in_out + trust_institution + permeability | country/lab),
 ##                   data = df_rq1
 ##               )
@@ -412,7 +413,7 @@ country_level_indicators <-
   read_csv("./country-level-indicators.csv")
 
 ## save coefficients
-coefs_model <- coef(model_country_dummy)
+coefs_model <- coef(model_rq1_country_att)
 
 ## save intercepts
 country_intercept <-
@@ -474,7 +475,6 @@ summary(model_real_world)
 ## ## run anova
 ## anova(model_real_world, ddf = "Kenward-Roger")
 
-
 #' 
 ## ----plot-rq3-----------------------------------------------------------------
 
@@ -533,3 +533,9 @@ ggplot(data = df_rq3_rand,
 
 ## ## run anova to check significance of demographic vars
 ## anova(model_rq2_min_demographics, ddf = "Kenward-Roger")
+
+##################################################
+
+## adjust all p.values afterwards using Benjamini & Yekutieli
+## these should be reported alongside unadjusted values
+## p.adjust(p, method = "BY")
