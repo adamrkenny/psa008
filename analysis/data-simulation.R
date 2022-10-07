@@ -42,7 +42,6 @@ country_names <-
                    
 ## df with labs randomly matched to a country
 ## with 15 countries with 2 labs
-## FIXME we'll want 5? USA/Italy/China
 df_lab_country <-
     
     tibble(
@@ -79,11 +78,7 @@ n_total <- nrow(fake_data)
 ## in-group--out-group) and the average attitude towards in-group and
 ## towards out-group
 
-## three minimal group measures are: difference between in-group and
-## out-group attitudes (att_bias), difference between in-group–self
-## and out-group–self decisions in the dictator game (dg_first_bias),
-## and the decision in the in-group–out-group dictator game
-## (dg_third_bias)
+## mean and sd values are taken from pilot 02
 
 ## add outcomes
 fake_data <-
@@ -93,33 +88,29 @@ fake_data <-
         dg_min_in_self = 
             round(
                 rtruncnorm(n_total, 
-                           mean = 3, sd = 3, min = 0, max = 10), 
+                           mean = 6.74, sd = 4.25, min = 0, max = 20), 
                   0),
         dg_min_out_self = 
             round(
                 rtruncnorm(n_total, 
-                           mean = 1, sd = 3, min = 0, max = 10), 
+                           mean = 5.83, sd = 4.49, min = 0, max = 20), 
                 0),
         dg_min_in_out = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 4, sd = 3, min = 0, max = 10), 
+                           mean = 11.8, sd = 3.29, min = 0, max = 20), 
                 0),
         att_min_in = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 6, sd = 3.5, min = 1, max = 7), 
+                           mean = 4.50, sd = 0.96, min = 1, max = 7), 
                 1),
         att_min_out = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 2, sd = 3.5, min = 1, max = 7), 
+                           mean = 3.87, sd = 0.88, min = 1, max = 7), 
                 1)
-    ) %>%
-    mutate(dg_min_bias_first = dg_min_in_self - dg_min_out_self,
-           dg_min_bias_third = dg_min_in_out,
-           att_min_bias = att_min_in - att_min_out)
-
+    )
 
 ##################################################
 ## RQ2 variables
@@ -161,18 +152,10 @@ fake_data <-
            trust_2 = rep(trust_2_score, n_labs_countries),
            self_esteem = rep(self_esteem_score, n_labs_countries),
            permeability = rep(permeability_score, n_labs_countries)
-           ) %>%
-    ## scale and remove [,1]: https://stackoverflow.com/a/39671848
-    mutate(
-        self_esteem = as.vector(
-             scale(self_esteem)),
-        trust_1 = as.vector(
-            scale(trust_1)),
-        trust_2 = as.vector(
-             scale(trust_2)),
-        permeability = as.vector(
-             scale(permeability))
-    )
+           )
+
+
+
 
 ##################################################
 ## RQ3 variables
@@ -186,27 +169,32 @@ fake_data <-
         dg_nat_in_self = 
             round(
                 rtruncnorm(n_total, 
-                           mean = 3, sd = 3, min = 0, max = 10), 
+                           ## mean = 3, sd = 3, min = 0, max = 10), 
+                           mean = 6.29, sd = 4.26, min = 0, max = 20), 
                   0),
         dg_nat_out_self = 
             round(
                 rtruncnorm(n_total, 
-                           mean = 1, sd = 3, min = 0, max = 10), 
+                           ## mean = 1, sd = 3, min = 0, max = 10), 
+                           mean = 6.26, sd = 4.59, min = 0, max = 20), 
                 0),
         dg_nat_in_out = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 4, sd = 3, min = 0, max = 10), 
+                           ## mean = 4, sd = 3, min = 0, max = 10), 
+                           mean = 10.80, sd = 3.18, min = 0, max = 20), 
                 0),
         att_nat_in = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 5, sd = 3.5, min = 1, max = 7), 
+                           ## mean = 5, sd = 3.5, min = 1, max = 7), 
+                           mean = 5.18, sd = 1.02, min = 1, max = 7), 
                 0),
         att_nat_out = 
                 round(
                 rtruncnorm(n_total, 
-                           mean = 3, sd = 3.5, min = 1, max = 7), 
+                           ## mean = 3, sd = 3.5, min = 1, max = 7), 
+                           mean = 4.84, sd = 0.95, min = 1, max = 7), 
                 0)
     ) %>%
     mutate(dg_nat_bias_first = dg_nat_in_self - dg_nat_out_self,
@@ -247,32 +235,34 @@ fake_data <-
 ##################################################
 ## demographic variables and additional measures
 
-## age categories
-age_cats <-
+## ## age categories
+## age_cats <-
 
-    c("18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75 or above") 
+##     c("18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75 or above") 
 
 ## political orientation categories
 pol_cats <-
 
-    c("Very liberal", "Somewhat liberal", "A little liberal", "Moderate",
-      "A little conservative", "Conservative", "Very conservative") 
+    ## c("Very liberal", "Somewhat liberal", "A little liberal", "Moderate",
+    ##   "A little conservative", "Conservative", "Very conservative") 
+    c("1", "2", "3", "4", "5", "6", "7") 
 
 ## income categories
 inc_cats <-
 
-    c("Far below average", "Below average", "Average", "Above average", "Far above average") 
+    ## c("Far below average", "Below average", "Average", "Above average", "Far above average") 
+    c("1", "2", "3", "4", "5") 
 
 ## add to data
 fake_data <-
 
     fake_data %>%
     mutate(
-        age = as.factor(sample(age_cats, nrow(fake_data), replace = TRUE)),
+        age = round(rtruncnorm(nrow(fake_data), mean = 35, sd = 10, min = 18, max = 70), 0),
         gender = as.factor(sample(c("male", "female", "other"),
                                   nrow(fake_data), replace = TRUE, prob = c(0.49, 0.49, 0.02))),
-        political = as.factor(sample(pol_cats, nrow(fake_data), replace = TRUE)),
-        income = as.factor(sample(inc_cats, nrow(fake_data), replace = TRUE))
+        political = as.numeric(sample(pol_cats, nrow(fake_data), replace = TRUE)),
+        income = as.numeric(sample(inc_cats, nrow(fake_data), replace = TRUE))
         )
 
 ##################################################
@@ -282,10 +272,11 @@ fake_data <-
 fake_data <-
 
     fake_data %>%
-    select(-contains("_self"), -contains("_in"), -contains("_out")) %>%
+    ## select(-contains("_self"), -contains("_in"), -contains("_out")) %>%
     ## rename trust 1 and trust 2
     rename(trust_in_out = trust_1,
            trust_institution = trust_2)
+
 
 ##################################################
 ## wrangle data
@@ -301,23 +292,20 @@ fake_data <-
 df_rq1 <-
 
     fake_data %>%
-    select(id, lab, country,
-           att_min_bias, dg_min_bias_first, dg_min_bias_third,
-           age, gender, political, income) %>%
-    mutate(att_min_bias = as.vector(scale(att_min_bias)),
-           dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
-           dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
-    pivot_longer(cols = c(contains("min_bias")), 
-                 names_to = "measure",
-                 values_to = "min_bias") %>%
-    mutate(measure = case_when(str_detect(measure, "att") ~ "att",
-                                  str_detect(measure, "first") ~ "dg_first",
-                                  str_detect(measure, "third") ~ "dg_third"
-                                  )) %>%
-    mutate(att_dummy = if_else(measure == "att", 1, 0),
-           dg_first_dummy = if_else(measure == "dg_first", 1, 0),
-           dg_third_dummy = if_else(measure == "dg_third", 1, 0)
-           )
+    pivot_longer(c("dg_min_in_self", "dg_min_out_self",
+                   "dg_min_in_out",
+                   "att_min_in", "att_min_out"),
+                 names_to = "measure", values_to = "amount") %>%
+    separate(col = measure, into = c("measure", "type"), extra = "merge") %>%
+    mutate(measure = case_when(measure == "dg" & type == "min_in_out" ~ "dg_third",
+                               measure == "dg" ~ "dg_first",
+                               measure == "att" ~ "att")) %>%
+    mutate(group = case_when(str_detect(type, "_in_out") ~ "both",
+                             str_detect(type, "_in") ~ "in",
+                             str_detect(type, "_out") ~ "out"
+                             )) %>%
+    select(id, lab, country, measure, group, amount,
+           age, gender, political, income)
 
 ## extract dataframes with each measure
 for (measure_type in c("att", "dg_first", "dg_third")) {
@@ -341,24 +329,21 @@ for (measure_type in c("att", "dg_first", "dg_third")) {
 df_rq2 <-
 
     fake_data %>%
-    select(id, lab, country, 
-          att_min_bias, dg_min_bias_first, dg_min_bias_third,
-          self_esteem, trust_in_out, trust_institution, permeability,
-          age, gender, political, income) %>%
-    mutate(att_min_bias = as.vector(scale(att_min_bias)),
-           dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
-           dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
-    pivot_longer(cols = c(contains("min_bias")), 
-                 names_to = "measure",
-                 values_to = "min_bias") %>%
-    mutate(measure = case_when(str_detect(measure, "att") ~ "att",
-                                  str_detect(measure, "first") ~ "dg_first",
-                                  str_detect(measure, "third") ~ "dg_third"
-                                  )) %>%
-    mutate(att_dummy = if_else(measure == "att", 1, 0),
-           dg_first_dummy = if_else(measure == "dg_first", 1, 0),
-           dg_third_dummy = if_else(measure == "dg_third", 1, 0)
-           )
+    pivot_longer(c("dg_min_in_self", "dg_min_out_self",
+                   "dg_min_in_out",
+                   "att_min_in", "att_min_out"),
+                 names_to = "measure", values_to = "amount") %>%
+    separate(col = measure, into = c("measure", "type"), extra = "merge") %>%
+    mutate(measure = case_when(measure == "dg" & type == "min_in_out" ~ "dg_third",
+                               measure == "dg" ~ "dg_first",
+                               measure == "att" ~ "att")) %>%
+    mutate(group = case_when(str_detect(type, "_in_out") ~ "both",
+                             str_detect(type, "_in") ~ "in",
+                             str_detect(type, "_out") ~ "out"
+                             )) %>%
+    select(id, lab, country, measure, group, amount,
+           self_esteem, trust_in_out, trust_institution, permeability,
+           age, gender, political, income)
 
 ## extract dataframes with each measure
 for (measure_type in c("att", "dg_first", "dg_third")) {
@@ -383,13 +368,39 @@ for (measure_type in c("att", "dg_first", "dg_third")) {
 df_rq3 <-
     
     fake_data %>%
+    mutate(att_min_bias = att_min_in - att_min_out,
+           att_nat_bias = att_nat_in - att_nat_out,
+           att_fam_bias = att_fam_in - att_fam_out) %>%
     select(id, lab, country,
            att_min_bias, att_nat_bias, att_fam_bias,
-           dg_min_bias_first, dg_nat_bias_first, dg_fam_bias_first,
+           ## dg_min_bias_first, dg_nat_bias_first, dg_fam_bias_first,
            age, gender, political, income) %>%
-    pivot_longer(cols = c(att_nat_bias, att_fam_bias),, 
+    pivot_longer(cols = c(att_nat_bias, att_fam_bias),
                  names_to = "group_type",
                  values_to = "att_real_bias") %>%
     mutate(group_type = case_when(str_detect(group_type, "nat") ~ "nat",
                                   str_detect(group_type, "fam") ~ "fam"
                                   ))
+
+## fake_data %>%
+##     pivot_longer(c("dg_min_in_self", "dg_min_out_self",
+##                    "dg_min_in_out",
+##                    "att_min_in", "att_min_out",
+##                    "dg_nat_in_self", "dg_nat_out_self",
+##                    "dg_nat_in_out",
+##                    "att_nat_in", "att_nat_out",
+##                    "dg_fam_in_self", "dg_fam_out_self",
+##                    "dg_fam_in_out",
+##                    "att_fam_in", "att_fam_out",
+##                    ),
+##                  names_to = "measure", values_to = "amount") %>%
+##     select(id, lab, country, measure, amount) %>%
+##     separate(col = measure, into = c("measure", "type"), extra = "merge") %>%
+##     separate(col = type, into = c("type", "group"), extra = "merge") %>%
+##     mutate(measure = case_when(measure == "dg" & group == "min_in_out" ~ "dg_third",
+##                                measure == "dg" ~ "dg_first",
+##                                measure == "att" ~ "att")) %>%
+##     mutate(group = case_when(str_detect(group, "in_out") ~ "both",
+##                              str_detect(group, "in") ~ "in",
+##                              str_detect(group, "out") ~ "out"
+##                              ))
