@@ -62,3 +62,13 @@ gg_caterpillar <- function(re, QQ=TRUE, likeDotplot=TRUE) {
 
     lapply(re, f)
 }
+
+
+## custom list of letters, from: https://stackoverflow.com/a/21681824
+letters_beyond_single_digits <- function(length.out) {
+  a <- rep(letters, length.out = length.out)
+  grp <- cumsum(a == "a")
+  vapply(seq_along(a), 
+         function(x) paste(rep(a[x], grp[x]), collapse = ""),
+         character(1L))g
+}
