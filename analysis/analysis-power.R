@@ -14,9 +14,8 @@ packages <- c(
   "tidyverse", # data wrangling
   "lme4", # random effects models
   "lmerTest", # random effects models
-  "mixedpower", # estimating power in lme
   "simr", # simulating data
-  "patchwork",# combine plots
+  "patchwork" # combine plots
 )
 ## create list of packages that have not been installed
 new_packages <-
@@ -37,27 +36,14 @@ sessionInfo() # session info
  
 ## Our outcome measures of bias will be set to both a larger and
 ## smaller value; we looked to the literature for an indication of
-## effect size.  The larger value is based on @Balliet-et-al_2014, a
+## effect size. The larger value is based on @Balliet-et-al_2014, a
 ## meta-analysis of intergroup discrimination in behavioural economic
 ## games. The overall effect size of games involving experimentally
-## created (i.e. minimal) groups was $d = 0.35 (0.27-0.42)$. The value
-## is similar to the overall effect size of $d = 0.37 (0.28-0.45; n =
-## 150)$ in games involving "artificial" (i.e. minimal) groups
-## reported in @Lane_2016.
-## 
-## Effects sizes relevant to national groups in economic tasks are a
-## meta-analysis and a recent cross-cultural study. @Lane_2016 also
-## reports an overall effect size of ``national'' groups $d = 0.16
-## (0.04–0.29; n = 52)$, and @Romano-et-al_2021 conducted a study
-## across 42 nations finding $d = 0.22 (0.19-0.25)$ (this compares
-## ingroup with outgroup plus strangers; from supplementary figures,
-## it appears that the difference between ingroup and outgroup is less
-## than ingroup and stranger, so the overall effect size for ingroup
-## outgroup is likely less than $0.22$). We are not aware of an
-## overall effect size of family from a meta-analysis or large scale
-## study to report an effect size. Therefore, we set the smaller
-## effect size to 0.16, which is approximately half the larger value
-## of 0.35.
+## created (i.e. minimal) groups was $d = 0.35 (0.27--0.42)$. The
+## value is similar to the overall effect size of $d = 0.37
+## (0.28--0.45; n = 150)$ in games involving "artificial"
+## (i.e. minimal) groups reported in @Lane_2016. We set the smaller
+## effect size to 0.16, which is approximately half the larger values.
  
 ## outcomes
 
@@ -278,11 +264,20 @@ n_sim <- 1000 # actual run
 ## sigma in models
 residual_sd <- 1
 
+## effect size
+min_bias_es <- es_outcome_smaller
+
+df <- fake_data_n200_c40
+
 ## moderator beta
-beta <- 0.4 # based on beta 0.419 from https://app.cooperationdatabank.org/
-## selecting State Trust as independent variable
-## as of 2022-11-22, 11 effects, 2036 total participants
-## average variance 0.037, which we round to 0.05 to make lowest variance
+beta <- 0.4
+## based on beta 0.419 from https://app.cooperationdatabank.org/
+
+## this selected State Trust as independent variable, which as as of
+## 2022-11-22, was composed of 11 effects and a total of 2036 participants
+
+## we set the lowest value for the variance to 0.05 in our power
+## analyss
 
 ## for sensitivity analysis
 ## create list of random intercepts
@@ -299,6 +294,62 @@ fixed <- c(
 random <- list(
     random_intercept  
 )
+
+## construct model
+model_rq2 <- 
+    
+    makeLmer(
+        min_bias ~ self_esteem + (1 | country),
+        fixef = fixed, 
+        VarCorr = random, 
+        sigma = residual_sd, 
+        data = df                 
+    )
+
+## check power
+sim_rq2 <- 
+    
+    powerSim(
+        model_rq2,
+        test = fixed("self_esteem"),
+        nsim = n_sim,
+        alpha = 0.05/3
+    )
+
+## extract number of countries and participants per country
+n_country <- pull(count(unique(select(df, country))))
+n_id <- pull(count(unique(select(df, id))))/n_country
+            
+## assign powersim to object for later use
+summary_sim_rq2 <-
+    
+    summary(sim_rq2) %>%
+    mutate(bias_es = min_bias_es,
+           random = random_intercept,
+           n_ids = n_id,
+           n_countries = n_country
+           )
+
+## assign powercurve to object for later use
+assign(
+    ## name of object
+    paste0("pwr_rq2_es", min_bias_es,
+           "_ri", random_intercept,
+           "_n", n_id,
+           "_c", n_country),
+    ## summary
+    summary_sim_rq2
+            )
+
+summary_sim_rq2 %>%
+    write_csv(path = paste0("pwr_rq2_es", min_bias_es,
+                            "_ri", random_intercept,
+                            "_n", n_id,
+                            "_c", n_country, ".csv"))
+
+##################################################
+## warning, the code below will zap cpu! best to run the code above
+## which is an example using a single set of parameters
 
 ## iterate over different effect sizes
 for (min_bias_es in c(es_outcome_smaller, es_outcome_larger)) {
