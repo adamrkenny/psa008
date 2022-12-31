@@ -149,11 +149,11 @@ df_processed <-
     ) %>%
     ## calculate bias NB subtract from 20 as either amount to self or to in-group
     mutate(dg_min_bias_first = (20 - dg_min_in_self) - (20 - dg_min_out_self),
-           dg_min_bias_third = dg_min_in_out - (20 - dg_min_in_out),
+           dg_min_bias_third = dg_min_in_out, 
            dg_nat_bias_first = (20 - dg_nat_in_self) - (20 - dg_nat_out_self),
-           dg_nat_bias_third = dg_nat_in_out - (20 - dg_nat_in_out),
+           dg_nat_bias_third = dg_nat_in_out, 
            dg_fam_bias_first = (20 - dg_fam_in_self) - (20 - dg_fam_out_self),
-           dg_fam_bias_third = dg_fam_in_out - (20 - dg_fam_in_out)
+           dg_fam_bias_third = dg_fam_in_out, 
            ) %>%
     mutate(att_min_in =
                (Attitude_IG_M_1 + Attitude_IG_M_2 + Attitude_IG_M_3 + Attitude_IG_M_4)/4,
@@ -198,7 +198,8 @@ df_processed <-
            trust_out = (interpersonaltrust_4 + # first time
                         interpersonaltrust_5 + # another religion
                         interpersonaltrust_6)/3, # another nationality
-           trust_in_out = trust_in - trust_out
+           trust_in_out = trust_in - trust_out,
+           trust_strangers = interpersonaltrust_4
            ) %>%
     ## create institutional trust variable
     mutate(across(starts_with("institutiontrust"), numeric_likert_trust_institution)) %>%
@@ -326,3 +327,4 @@ df_processed <-
 
 ## ## save as csv
 ## df_processed %>% write_csv("../data/data-pilot-02-processed.csv")
+
