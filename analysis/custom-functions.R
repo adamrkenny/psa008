@@ -70,5 +70,5 @@ letters_beyond_single_digits <- function(length.out) {
   grp <- cumsum(a == "a")
   vapply(seq_along(a), 
          function(x) paste(rep(a[x], grp[x]), collapse = ""),
-         character(1L))g
+         character(1L))
 }
