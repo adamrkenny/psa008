@@ -203,7 +203,7 @@ for (n_countries in list_n_countries) {
         
         ## mean and sd values are taken from pilot 02
         
-        ## add outcomes
+        ## add outcomes for RQ1 and RQ2
         fake_data <-
             
             fake_data %>%
@@ -239,6 +239,41 @@ for (n_countries in list_n_countries) {
             fake_data %>%
             mutate(self_esteem = rep(self_esteem_score, n_countries)
                    )
+        ## RQ3 variables
+
+        ## mean and sd values are taken from pilot 02
+        
+        ## add real-world measures
+        fake_data <-
+            
+            fake_data %>%
+            ## nation
+            mutate(
+                dg_nat_in_self = 
+                    round(
+                        rtruncnorm(n_total, 
+                                   mean = 6.29, sd = 4.26, min = 0, max = 20), 
+                        0),
+                dg_nat_out_self = 
+                    round(
+                        rtruncnorm(n_total, 
+                                   mean = 6.26, sd = 4.59, min = 0, max = 20), 
+                        0)) %>%
+            mutate(nat_bias = dg_nat_in_self - dg_nat_out_self) %>%
+            ## family        
+            mutate(
+                dg_fam_in_self = 
+                    round(
+                        rtruncnorm(n_total, 
+                                   mean = 3, sd = 3, min = 0, max = 10), 
+                        0),
+                dg_fam_out_self = 
+                    round(
+                        rtruncnorm(n_total, 
+                                   mean = 1, sd = 3, min = 0, max = 10), 
+                        0)) %>%
+            mutate(fam_bias = dg_fam_in_self - dg_fam_out_self)
+        
         
         ## assign to object for later use
         assign(
@@ -257,6 +292,8 @@ gather_dfs <- grep("fake_data_n", names(.GlobalEnv), value = TRUE)
 list_dfs <- do.call("list", mget(gather_dfs))
 
 ##################################################
+## this is an example of estimating power for RQ2
+## for a given dataset using a single set of parameters
 
 ## n_sim <- 10 # to troubleshoot
 n_sim <- 1000 # actual run
@@ -267,6 +304,7 @@ residual_sd <- 1
 ## effect size
 min_bias_es <- es_outcome_smaller
 
+## extract dataframe that has 200 participants across 40 countries
 df <- fake_data_n200_c40
 
 ## moderator beta
@@ -282,6 +320,7 @@ beta <- 0.4
 ## for sensitivity analysis
 ## create list of random intercepts
 list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80)
+## select one for example
 random_intercept <- c(0.30)
 
 ## fixed intercept 
@@ -299,7 +338,7 @@ random <- list(
 model_rq2 <- 
     
     makeLmer(
-        min_bias ~ self_esteem + (1 | country),
+        min_bias ~ self_esteem + (1 | country), # we use simplier random structure to make code easier to run
         fixef = fixed, 
         VarCorr = random, 
         sigma = residual_sd, 
@@ -427,3 +466,127 @@ list_pwr_sim <- do.call("list", mget(gather_pwr_sim))
 
 bind_rows(list_pwr_sim) %>%
     write_csv(path = "./pwr-sims-combined.csv")
+
+##################################################
+## RQ3
+
+## We conduct a power analysis using the pre-specified mixed-effects
+## model. For each fixed effect we specify the beta coefficients, for
+## each random effect the variance, and finally the error variance
+## (\ie sigma). The error variance is set to 0.1.
+
+##################################################
+## this is an example of estimating power for RQ3
+## for a given dataset using a single set of parameters
+
+## n_sim <- 10 # to troubleshoot
+n_sim <- 1000 # actual run
+
+## sigma in models
+residual_sd <- 1
+
+## effect size
+
+## Effects sizes relevant to national groups in economic tasks are a
+## meta-analysis and a recent cross-cultural study. @Lane_2016 also
+## reports an overall effect size of ``national'' groups $d = 0.16
+## (0.04–0.29; n = 52)$, and @Romano-et-al_2021 conducted a study
+## across 42 nations finding $d = 0.22 (0.19-0.25)$ (this compares
+## ingroup with outgroup plus strangers; from supplementary figures,
+## it appears that the difference between ingroup and outgroup is less
+## than ingroup and stranger, so the overall effect size for ingroup
+## outgroup is likely less than $0.22$). We are not aware of an
+## overall effect size of family from a meta-analysis or large scale
+## study to report an effect size. Thus, we set the smaller effect
+## size to 0.16, which is the same used for RQ1 and RQ2.
+
+real_bias_es <- es_outcome_smaller
+
+## extract dataframe that has 200 participants across 40 countries
+df <- fake_data_n200_c40 %>%
+    ## then adjust dataframe to contain relevant predictors (MGE, group type)
+    pivot_longer(cols = c("nat_bias", "fam_bias"),
+                 names_to = "group_type", values_to = "real_bias") %>%
+    rename(MGE = min_bias) %>%
+    separate(group_type, into = c("group_type", "bias")) %>%
+    select(id, country, MGE, group_type, real_bias)
+
+## moderators beta
+beta_mge <- 0.2 
+beta_group_type <- 0.0
+beta_interaction <- 1.0
+
+## we set the lowest value for the variance to 0.05 in our power
+## analyss
+
+## for sensitivity analysis
+## create list of random intercepts
+list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80)
+## select one for example
+random_intercept <- c(0.30)
+
+## fixed intercept 
+fixed <- c(
+    real_bias_es # outcome
+  , beta_mge # MGE
+  , beta_group_type # group type
+  , beta_interaction # interaction
+)
+
+## random intercepts
+random <- list(
+    random_intercept # for id
+  , random_intercept # for country
+)
+
+## construct model
+model_rq3 <- 
+    
+    makeLmer(
+        real_bias ~ MGE * group_type + (1 | id) + (1 | country), # we use simplier random structure to make code easier to run
+        fixef = fixed, 
+        VarCorr = random, 
+        sigma = residual_sd, 
+        data = df
+    )
+
+## check power
+sim_rq3 <- 
+    
+    powerSim(
+        model_rq3,
+        test = fixed("MGE:group_type"),
+        nsim = n_sim,
+        alpha = 0.05/3
+    )
+
+## extract number of countries and participants per country
+n_country <- pull(count(unique(select(df, country))))
+n_id <- pull(count(unique(select(df, id))))/n_country
+            
+## assign powersim to object for later use
+summary_sim_rq3 <-
+    
+    summary(sim_rq3) %>%
+    mutate(bias_es = real_bias_es,
+           random = random_intercept,
+           n_ids = n_id,
+           n_countries = n_country
+           )
+
+## assign powercurve to object for later use
+assign(
+    ## name of object
+    paste0("pwr_rq3_es", min_bias_es,
+           "_ri", random_intercept,
+           "_n", n_id,
+           "_c", n_country),
+    ## summary
+    summary_sim_rq2
+            )
+
+summary_sim_rq3 %>%
+    write_csv(path = paste0("pwr_rq3_es", min_bias_es,
+                            "_ri", random_intercept,
+                            "_n", n_id,
+                            "_c", n_country, ".csv"))
