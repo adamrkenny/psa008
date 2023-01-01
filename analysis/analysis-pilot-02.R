@@ -1,9 +1,10 @@
 ## title: "Pilot study: summary and analysis"
-## author: "PSA 008"
-## 
-## This document describes the analysis pipeline for PSA 008 Minimal
-## Groups, using the pilot study.
+## author: "PSA 008" v. R&R
 
+## This document describes the analysis pipeline for PSA 008 Minimal
+## Groups, using the second pilot study.
+
+##################################################
 ## R package information
 
 ## load packages
@@ -493,7 +494,13 @@ I_squared <- 100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_countr
 ## tau
 ## reported in summary
 
-## According to the Q test, there was no significant heterogeneity (`r format(round(es_country$QE, 2), nsmall = 2)`, p = `r format(round(es_country$QEp, 3), nsmall = 3)`). $I^2$ showed low heterogeneity ($I^2$ = `r format(round(I_squared, 2), nsmall = 2)`), assuming common thersholds (less than 25% suggests it is not important). Tau showed zero heterogeneity ($\tau$ = `r  es_country$tau2`).
+## According to the Q test, there was no significant heterogeneity (`r
+## format(round(es_country$QE, 2), nsmall = 2)`, p = `r
+## format(round(es_country$QEp, 3), nsmall = 3)`). $I^2$ showed low
+## heterogeneity ($I^2$ = `r format(round(I_squared, 2), nsmall =
+## 2)`), assuming common thersholds (less than 25% suggests it is not
+## important). Tau showed zero heterogeneity ($\tau$ = `r
+## es_country$tau2`).
 
 ##################################################
 ### Third party allocations
@@ -538,7 +545,6 @@ df_rq1_ma <-
                   sum_diff_n = sum_diff / (n_sample - 1),
                   sqrt_sum_diff_n = sqrt(sum_diff_n),
                   d_z = mean_diff / sqrt_sum_diff_n,
-                  ## sampling variance # FIXME d or g?
                   sv = sum_diff_n
         )
 
@@ -630,13 +636,14 @@ for (measure_type in c("att", "dg_first", "dg_third")) {
     
 }
 
-## Analyses (all moderators, country-level analyses, robustness checks) are in the repo. Below is an individual level analysis of a single moderator.
+#####
+## Below is an individual level analysis of a single moderator, as an example.
 
 ## individualism--collectivism
 model_rq2_permeability <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + permeability + (1 | country)
+                  min_bias ~ 1 + permeability + (permeability | country)
                 , data = df_rq2_att)
 
 ## summarise
@@ -651,21 +658,21 @@ summary(model_rq2_permeability)
 model_rq2_family_ties <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + family_ties + (1 | country)
+                  min_bias ~ 1 + family_ties + (family_ties | country)
                 , data = df_rq2_att)
 
 ## individualism--collectivism
 model_rq2_permeability <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + permeability + (1 | country)
+                  min_bias ~ 1 + permeability + (permeability | country)
                 , data = df_rq2_att)
 
 ## model relational mobility
 model_rq2_relational_mobility <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + relational_mobility + (1 | country)
+                  min_bias ~ 1 + relational_mobility + (relational_mobility | country)
                 , data = df_rq2_att)
 
 ## 2 models for trust (hypothesis H2.2)
@@ -674,14 +681,14 @@ model_rq2_relational_mobility <-
 model_rq2_trust_strangers <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + trust_strangers + (1 | country)
+                  min_bias ~ 1 + trust_strangers + (trust_strangers | country)
                 , data = df_rq2_att)
 
 ## model with trust (institutional)
 model_rq2_trust_institution <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + trust_institution + (1 | country)
+                  min_bias ~ 1 + trust_institution + (trust_institution | country)
                 , data = df_rq2_att)
 
 ## 1 model for self-esteem (hypothesis H2.3)
@@ -690,7 +697,7 @@ model_rq2_trust_institution <-
 model_rq2_esteem <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + self_esteem + (1 | country)
+                  min_bias ~ 1 + self_esteem + (self_esteem | country)
                 , data = df_rq2_att)
 
 ## 2 models for belief and status (hypothesis H2.4)
@@ -699,14 +706,14 @@ model_rq2_esteem <-
 model_rq2_belief <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + belief + (1 | country)
+                  min_bias ~ 1 + belief + (belief | country)
                 , data = df_rq2_att)
 
 ## model with status
-model_rq2_belief <-
+model_rq2_status <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + status + (1 | country)
+                  min_bias ~ 1 + status + (status | country)
                 , data = df_rq2_att)
 
 ## summarise
@@ -715,12 +722,9 @@ summary(model_rq2_permeability)
 ##################################################
 # Research Question 3
 
-## Analyses (all outcomes, robustness checks) are in the repo. Below is analysis of one outcome.
-
-## Research question 3
-
 ## For research question 3, we assess whether real-world bias (towards
-## the nation and/or family) is predicted by minimal group bias. 
+## the nation and/or family) is predicted by minimal group bias. Below
+## is analysis using one outcome, attitudes.
 
 ## measures real-world bias
 ## longish dataframe with relevant vars
