@@ -294,12 +294,13 @@ df_rq1_ma <-
               ## standard deviation per condition
               sd_min_in_self = sd(`in`),
               sd_min_out_self = sd(out),
-              sd_z = sqrt(sd_min_in_self^2 + sd_min_out_self^2 + 
-                          2*r_means*sd_min_in_self*sd_min_in_self),
-              sd_rm = sd_z / (sqrt(2*(1 - r_means))),
+              sd_rm = sqrt(((
+                  (n_sample-1) * (sd_min_in_self^2)) +
+                  (n_sample-1) * (sd_min_out_self^2))/
+                  (n_sample*2 + 2)),
               ## effect size
               d = (mean_min_in_self - mean_min_out_self) / sd_rm,
-              g = d * (1 - (3/((4*n_sample) - 9))), # NB not needed
+              g = d * (1 - (3/((4*n_sample) - 9))), # NB not really needed as sufficiently powered
               ## sampling variance
               sv = (((1/n_sample) + (d^2/(2*n_sample))) * (2*(1 - r_means))),
               ## 95% confidence intervals
@@ -409,9 +410,10 @@ df_rq1_ma <-
               ## standard deviation per condition
               sd_min_in_self = sd(`in`),
               sd_min_out_self = sd(out),
-              sd_z = sqrt(sd_min_in_self^2 + sd_min_out_self^2 + 
-                          2*r_means*sd_min_in_self*sd_min_in_self),
-              sd_rm = sd_z / (sqrt(2*(1 - r_means))),
+              sd_rm = sqrt(((
+                  (n_sample-1) * (sd_min_in_self^2)) +
+                  (n_sample-1) * (sd_min_out_self^2))/
+                  (n_sample*2 + 2)),
               ## effect size
               d = (mean_min_in_self - mean_min_out_self) / sd_rm,
               g = d * (1 - (3/((4*n_sample) - 9))), # NB not needed
@@ -531,21 +533,21 @@ df_rq1_ma <-
     ## mutate(`in` = both,
     ##        out = 20 - `in`) %>%    
     ## mutate(`in` = `in`- 10,
-        ##        out = out - 10) %>%
-        mutate(diff = `in` - out) %>%
-        group_by(country) %>%
-        mutate(mean_diff = mean(diff)) %>%
-        unnest(cols = c()) %>%
-        mutate(diff_mean_diff = diff - mean_diff,
-               diff_mean_diff_sq = (diff_mean_diff)^2
-               ) %>%
-        summarise(n_sample = n(),
-                  mean_diff = mean(mean_diff),
-                  sum_diff = sum(diff_mean_diff_sq),
-                  sum_diff_n = sum_diff / (n_sample - 1),
-                  sqrt_sum_diff_n = sqrt(sum_diff_n),
-                  d_z = mean_diff / sqrt_sum_diff_n,
-                  sv = sum_diff_n
+    ##        out = out - 10) %>%
+    mutate(diff = `in` - out) %>%
+    group_by(country) %>%
+    mutate(mean_diff = mean(diff)) %>%
+    unnest(cols = c()) %>%
+    mutate(diff_mean_diff = diff - mean_diff,
+           diff_mean_diff_sq = (diff_mean_diff)^2
+           ) %>%
+    summarise(n_sample = n(),
+              mean_diff = mean(mean_diff),
+              sum_diff = sum(diff_mean_diff_sq),
+              sum_diff_n = sum_diff / (n_sample - 1),
+              sqrt_sum_diff_n = sqrt(sum_diff_n),
+              d_z = mean_diff / sqrt_sum_diff_n,
+              sv = sum_diff_n
         )
 
 ## We then run the meta-analysis with country as random effect:
