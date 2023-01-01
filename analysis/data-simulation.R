@@ -14,8 +14,9 @@ set.seed(1970) # to reproduce analysis
 
 ## first generate the basic characteristics: id, lab, country
 
-## arbitrarily set the number of labs to the same as PSACR002
-n_countries <- 20
+## set the number of labs to a value similar to the number of
+## interested collaborators, currently at n = 59
+n_countries <- 50
 n_labs <- n_countries + 5
 ## create number of subjects per country
 n_ids_per_country <- 100
@@ -28,16 +29,13 @@ lab_names <-
     
     seq(1:n_labs) %>%
     tibble() %>%
-    ## mutate(labs = if_else(. < 10, paste0("lab0", .), paste0("lab", .))) %>%
     pull()
 
 ## create list of country names
 country_names <-
     
-    ## seq(1:n_countries) %>%
-    letters[seq( from = 1, to = n_countries )] %>%
+    letters_beyond_single_digits(n_countries) %>%
     tibble() %>%
-    ## mutate(labs = if_else(. < 10, paste0("country0", .), paste0("country", .))) %>%
     pull()
                    
 ## df with labs randomly matched to a country
@@ -69,7 +67,6 @@ n_labs_countries <-
 ## number of participants
 n_total <- nrow(fake_data)
 
-
 ##################################################
 ## RQ1 variables
 
@@ -100,6 +97,8 @@ fake_data <-
                 rtruncnorm(n_total, 
                            mean = 11.8, sd = 3.29, min = 0, max = 20), 
                 0),
+        dg_min_in_out_out = 
+                20 - dg_min_in_out,
         att_min_in = 
                 round(
                 rtruncnorm(n_total, 
@@ -154,11 +153,10 @@ fake_data <-
            permeability = rep(permeability_score, n_labs_countries)
            )
 
-
-
-
 ##################################################
 ## RQ3 variables
+
+## mean and sd values are taken from pilot 02
 
 ## add real-world measures
 fake_data <-
@@ -169,31 +167,28 @@ fake_data <-
         dg_nat_in_self = 
             round(
                 rtruncnorm(n_total, 
-                           ## mean = 3, sd = 3, min = 0, max = 10), 
                            mean = 6.29, sd = 4.26, min = 0, max = 20), 
                   0),
         dg_nat_out_self = 
             round(
                 rtruncnorm(n_total, 
-                           ## mean = 1, sd = 3, min = 0, max = 10), 
                            mean = 6.26, sd = 4.59, min = 0, max = 20), 
                 0),
         dg_nat_in_out = 
                 round(
                 rtruncnorm(n_total, 
-                           ## mean = 4, sd = 3, min = 0, max = 10), 
                            mean = 10.80, sd = 3.18, min = 0, max = 20), 
                 0),
+        dg_nat_in_out_out = 
+            20 - dg_nat_in_out,
         att_nat_in = 
                 round(
                 rtruncnorm(n_total, 
-                           ## mean = 5, sd = 3.5, min = 1, max = 7), 
                            mean = 5.18, sd = 1.02, min = 1, max = 7), 
                 0),
         att_nat_out = 
                 round(
                 rtruncnorm(n_total, 
-                           ## mean = 3, sd = 3.5, min = 1, max = 7), 
                            mean = 4.84, sd = 0.95, min = 1, max = 7), 
                 0)
     ) %>%
@@ -217,6 +212,8 @@ fake_data <-
                 rtruncnorm(n_total, 
                            mean = 4, sd = 3, min = 0, max = 10), 
                 0),
+        dg_fam_in_out_out = 
+            20 - dg_fam_in_out,
         att_fam_in = 
                 round(
                 rtruncnorm(n_total, 
@@ -235,22 +232,17 @@ fake_data <-
 ##################################################
 ## demographic variables and additional measures
 
-## ## age categories
-## age_cats <-
-
-##     c("18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75 or above") 
-
-## political orientation categories
+## political orientation categories, that represent the scale: c("Very
+## liberal", "Somewhat liberal", "A little liberal", "Moderate", "A
+## little conservative", "Conservative", "Very conservative")
 pol_cats <-
 
-    ## c("Very liberal", "Somewhat liberal", "A little liberal", "Moderate",
-    ##   "A little conservative", "Conservative", "Very conservative") 
     c("1", "2", "3", "4", "5", "6", "7") 
 
-## income categories
+## income categories, that represent the scale: c("Far below average",
+## "Below average", "Average", "Above average", "Far above average")
 inc_cats <-
 
-    ## c("Far below average", "Below average", "Average", "Above average", "Far above average") 
     c("1", "2", "3", "4", "5") 
 
 ## add to data
@@ -258,11 +250,16 @@ fake_data <-
 
     fake_data %>%
     mutate(
-        age = round(rtruncnorm(nrow(fake_data), mean = 35, sd = 10, min = 18, max = 70), 0),
+        age = round(rtruncnorm(
+            nrow(fake_data),
+            mean = 35, sd = 10, min = 18, max = 70),
+            0),
         gender = as.factor(sample(c("male", "female", "other"),
                                   nrow(fake_data), replace = TRUE, prob = c(0.49, 0.49, 0.02))),
-        political = as.numeric(sample(pol_cats, nrow(fake_data), replace = TRUE)),
-        income = as.numeric(sample(inc_cats, nrow(fake_data), replace = TRUE))
+        political = as.numeric(sample(pol_cats,
+                                      nrow(fake_data), replace = TRUE)),
+        income = as.numeric(sample(inc_cats,
+                                   nrow(fake_data), replace = TRUE))
         )
 
 ##################################################
@@ -276,7 +273,6 @@ fake_data <-
     ## rename trust 1 and trust 2
     rename(trust_in_out = trust_1,
            trust_institution = trust_2)
-
 
 ##################################################
 ## wrangle data
@@ -293,14 +289,17 @@ df_rq1 <-
 
     fake_data %>%
     pivot_longer(c("dg_min_in_self", "dg_min_out_self",
-                   "dg_min_in_out",
+                   "dg_min_in_out", "dg_min_in_out_out",
                    "att_min_in", "att_min_out"),
                  names_to = "measure", values_to = "amount") %>%
     separate(col = measure, into = c("measure", "type"), extra = "merge") %>%
-    mutate(measure = case_when(measure == "dg" & type == "min_in_out" ~ "dg_third",
+    mutate(measure = case_when(## measure == "dg" & type == "min_in_out" ~ "dg_third",
+                               measure == "dg" & str_detect(type, "min_in_out") ~ "dg_third",
                                measure == "dg" ~ "dg_first",
                                measure == "att" ~ "att")) %>%
-    mutate(group = case_when(str_detect(type, "_in_out") ~ "both",
+    mutate(group = case_when(## str_detect(type, "_in_out") ~ "both",
+                             str_detect(type, "_in_out_out") ~ "out",
+                             str_detect(type, "_in_out") ~ "in",
                              str_detect(type, "_in") ~ "in",
                              str_detect(type, "_out") ~ "out"
                              )) %>%
