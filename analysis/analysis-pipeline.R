@@ -366,6 +366,114 @@ I_squared <- 100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_countr
 ## tau
 ## reported in summary
 
+#####
+## robustness checks
+
+## the following specifications will be included as the robustness
+## checks for RQ1 NB this is an example for one outcome, it will be
+## repeated with the other two outcomes
+
+## meta-analysis with experimental setting as predictor
+es_country_setting <-
+
+    rma.mv(g, 
+           sv,
+           mods = ~ experimental_setting,
+           random = list(~ 1 | country),
+           data = df_rq1_ma)
+
+## coefficients
+summary(es_country_setting)
+
+##################################################
+## additional mixed-model approach
+
+## we will also perform three linear mixed-effects analyses
+## NB below is example using one outcome, attitude --- this will be
+## repeated with the other two outcomes
+model_rq1_att <-
+    
+    lmerTest::lmer(
+                  amount ~ group + (1 | id) + (1 | country)
+                , contrasts = list(group = "contr.sum")
+                , data = df_rq1)
+
+## summarise
+summary(model_rq1_att)
+
+##### robustness checks
+
+## we then run robustness checks, including:
+
+## demographic variables
+## NB this will be with all models, included one model here for demonstration purposes
+
+## model with demographics
+model_rq1_att_demographics <- 
+    
+    lmerTest::lmer(
+                  amount ~ group + 
+                      age + gender + income + political +
+                      (1 | id) + (1 | country)
+                , contrasts = list(group = "contr.sum",
+                                   gender = "contr.sum")
+                , data = df_rq2_att
+              )
+
+## summary
+summary(model_rq1_att_demographics)
+
+## check with familiarity
+## NB this will be with all models, included one model here for demonstration purposes
+## NB commented out as familiarity is not in simulated data
+model_rq1_att_familiarity <- 
+    
+    lmerTest::lmer(
+                  amount ~ group + 
+                      familiarity +
+                      (1 | id) + (1 | country)
+                , contrasts = list(group = "contr.sum",
+                                   familiarity = "contr.sum")
+                , data = df_rq2_att
+              )
+
+## summary
+summary(model_rq1_att_familiarity)
+
+## check with attention check
+## NB this will be with all models, included one model here for demonstration purposes
+## NB commented out as attention check (correct, fail) is not in simulated data
+model_rq1_att_attention <- 
+    
+    lmerTest::lmer(
+                  amount ~ group + 
+                      attention_check +
+                      (1 | id) + (1 | country)
+                , contrasts = list(group = "contr.sum",
+                                   attention_check = "contr.sum")
+                , data = df_rq2_att
+              )
+
+## summary
+summary(model_rq1_att_attention)
+
+## check with experimental setting
+## NB this will be with all models, included one model here for demonstration purposes
+## NB commented out as experimental setting (lab, on-line) is not in simulated data
+model_rq1_att_experimental_setting <- 
+    
+    lmerTest::lmer(
+                  amount ~ group + 
+                      experimental_setting +
+                      (1 | id) + (1 | country)
+                , contrasts = list(group = "contr.sum",
+                                   experimental_setting = "contr.sum")
+                , data = df_rq2_att
+              )
+
+## summary
+summary(model_rq1_att_experimental_setting)
+
 ##################################################
 ## Research Question 2
 
@@ -455,6 +563,25 @@ model_rq2_esteem <-
 ##     lmerTest::lmer(
 ##                   amount ~ 1 + status + (status | country)
 ##                 , data = df_rq2_att)
+
+##### demographics
+## include demographic variables
+## as robustness checks
+## NB this will be with all models, included one model here for demonstration purposes
+
+## model with demographics
+model_rq2_permeability_demographics <- 
+    
+    lmerTest::lmer(
+                  amount ~ permeability + 
+                      age + gender + income + political +
+                      (permeability | country)
+                , contrasts = list(gender = "contr.sum")
+                , data = df_rq2_att
+              )
+
+## summary
+summary(model_rq2_permeability_demographics)
 
 ##################################################
 ### Country level 
@@ -569,9 +696,9 @@ ggplot(data = df_rq3_rand,
 ##### demographics
 ## include demographic variables
 ## as robustness checks
-## NB this will be with all models, included model here for demonstration purposes
+## NB this will be with all models, included one model here for demonstration purposes
 
-## model with country
+## model with demographics
 model_real_world_demographics <- 
     
     lmerTest::lmer(
@@ -586,6 +713,3 @@ model_real_world_demographics <-
 
 ## summary
 summary(model_real_world_demographics)
-
-## run anova to check significance of demographic vars
-anova(model_real_world_demographics, ddf = "Kenward-Roger")
