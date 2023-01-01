@@ -1,23 +1,23 @@
-#' ---
-#' title: "Analysis pipeline"
-#' author: "PSA 008"
-#' ---
-#' 
-#' This document describes the analysis pipeline for PSA 008 Minimal
-#' Groups. It does not include the power analysis, which is in a
-#' separate document. The purpose is to troubleshoot --- some
-#' (e.g. convergence) errors might be an artifact of the artificial
-#' data.
+## title: "Analysis pipeline"
+## author: "PSA008" v. R&R
 
-#' 
-#' ## R package information
-#' 
-## ----load-packages------------------------------------------------------------
+## This document describes the analysis pipeline for PSA 008 Minimal
+## Groups. It does not include the power analysis, which is in a
+## separate document. The purpose is to troubleshoot --- some
+## (e.g. convergence) errors might be an artifact of the artificial
+## data.
+
+##################################################
+## R package information
+ 
+## load packages
 ## list of packages required
 packages <- c(
   "tidyverse", # data wrangling
   "lme4", # random effects models
-  "lmerTest" # random effects models
+  "lmerTest", # random effects models
+  "metafor", # for meta-analysis
+  "patchwork" # plots
 )
 ## create list of packages that have not been installed
 new_packages <-
@@ -34,38 +34,35 @@ set.seed(1970) # to reproduce analysis
 
 sessionInfo() # session info
 
-#' 
-#' ## Input artificial data
-#' 
-#' We created an artificial dataset that contains the relevant
-#' variables in a separate script, which we can call here and in other
-#' files. Note the dataset here will include the variables used in the
-#' main analyses, not all collected variables. Furthermore, the
-#' dataset resembles the processed data, not the raw data from
-#' Qualtrics.
-#' 
-## ---- source-simulated-data---------------------------------------------------
+##################################################
+## Input artificial data
+
+## We created an artificial dataset that contains the relevant
+## variables in a separate script, which we can call here and in other
+## files. Note the dataset here will include the variables used in the
+## main analyses, not all collected variables. Furthermore, the
+## dataset resembles the processed data, not the raw data from
+## Qualtrics.
+ 
+## source simulated daa
 ## loads the simulated data, and wrangled dataframes for each RQ
 source("./data-simulation.R")
 
 ## peek at data
 head(fake_data)
 
-#' 
-#' The (minimal group) dependent measures are based on the three
-#' dictator games (in-group--self, out-group--self,
-#' in-group--out-group) and the average attitude towards in-group and
-#' towards out-group. The resultant three measures are: scores in
-#' in-group and out-group attitudes (att_bias), amount in
-#' in-group–self and out-group–self decisions in the dictator game
-#' (dg_first_bias), and the decision in the in-group–out-group
-#' dictator game (dg_third_bias).
-#' 
-#' ## Research question 1
-#' 
-#' Let's run some summary statistics (of att_bias).
-#' 
-## ---- rq1-manipulation--------------------------------------------------------
+## The (minimal group) dependent measures are based on the three
+## dictator games (in-group--self, out-group--self,
+## in-group--out-group) and the average attitude towards in-group and
+## towards out-group. The resultant three measures are: scores in
+## in-group and out-group attitudes (att_bias), amount in
+## in-group–self and out-group–self decisions in the dictator game
+## (dg_first_bias), and the decision in the in-group–out-group
+## dictator game (dg_third_bias).
+
+## First run some summary statistics (of att_bias, the same could be
+## done for the other two outcomes)
+
 ## peek at dataframe
 head(df_rq1)
 
@@ -83,312 +80,473 @@ df_rq1_att %>%
   mutate_if(is.numeric, ~round(., 2)) %>% 
     print(n = n_countries)
 
-#' 
-#' We then use outcome minimal bias (min_bias), which includes all three (standardised) measures of bias with the minimal groups. Measure can then be include as a random effect.
-#' 
-#' We can run the model either with measure combined or as dummy; I find it easier to extract country-level random effects if we use dummy.
-#' 
-## ---- rq1-combined-dv-group---------------------------------------------------
-## model with country
-model_rq1_country_att <- 
+##################################################
+## Research question 1
 
-    lmerTest::lmer(
-                  amount ~ 1 + group + (1 | id) + (1 + group | country)
-                , data = df_rq1_att 
-                , contrasts = list(group = "contr.sum")
+##################################################
+## meta-analytical approach
+
+##################################################
+## Attitudes
+
+## calculate d and sv
+## first calculate various measures (e.g. sd, r)
+df_rq1_ma <-
+
+    filter(df_rq1, measure == "att") %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    group_by(country) %>%
+    summarise(n_sample = n(),
+              ## means per condition
+              mean_min_in_self = mean(`in`),
+              mean_min_out_self = mean(out),
+              ## correlation between conditions
+              r_means = cor(`in`, out),
+              ## standard deviation per condition
+              sd_min_in_self = sd(`in`),
+              sd_min_out_self = sd(out),
+              sd_z = sqrt(sd_min_in_self^2 + sd_min_out_self^2 + 
+                          2*r_means*sd_min_in_self*sd_min_in_self),
+              sd_rm = sd_z / (sqrt(2*(1 - r_means))),
+              ## effect size
+              d = (mean_min_in_self - mean_min_out_self) / sd_rm,
+              g = d * (1 - (3/((4*n_sample) - 9))), # NB not needed
+              ## sampling variance
+              sv = (((1/n_sample) + (d^2/(2*n_sample))) * (2*(1 - r_means))),
+              ## 95% confidence intervals
+              ci_low = g - qnorm(0.025, lower.tail = FALSE) * sqrt(sv),
+              ci_up = g - qnorm(0.975, lower.tail = FALSE) * sqrt(sv)
               )
 
-## summary
-summary(model_rq1_country_att) 
-
-## icc
-## country variance / (residual + country variance)
-## TODO insert values
-
-## dotplot
-gg_caterpillar(ranef(model_rq1_country_att, condVar = TRUE), QQ = FALSE, 
-               likeDotplot = FALSE)
-
-## built plot manually
-## from ranef help file
-str(model_rq1_country_att_ranef <- ranef(model_rq1_country_att))
-str(model_rq1_country_att_ranef_df <- as.data.frame(model_rq1_country_att_ranef))
-model_rq1_country_att_ranef_df %>%
-    filter(grpvar == "country" & term == "groupout") %>%
+## We show a cleveland plot of the raw data
+filter(df_rq1, measure == "att") %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    pivot_longer(cols = c(`in`, out), names_to = "group", values_to = "amount") %>%
+    group_by(country, group) %>%
+    summarise(mean = mean(amount)) %>%
+    ungroup %>%
     ggplot() +
-    aes(y = grp, x = condval) +
-    geom_point(size = 2) +
-    ## facet_wrap(~term, scales = "free_x") +
-    geom_errorbarh(aes(xmin = condval - 2*condsd,
-                       xmax = condval + 2*condsd),
-                   height = 0) +
-    xlab("random effect") +
+    aes(mean, country) +
+    geom_line(aes(group = country)) +
+    geom_point(aes(colour = group), size = 3) +
+    xlim(1, 7) +
+    theme_minimal()
+
+## We then run the meta-analysis with country as random effect:
+
+## effect size moderated by country
+es_country <-
+
+    rma.mv(g, 
+           sv, 
+           random = list(~ 1 | country),
+           data = df_rq1_ma)
+
+## coefficients
+summary(es_country)
+
+## As shown in the summary above, the overall effect size is `r
+## round(coef(summary(es_country))$estimate, 2)` (`r
+## round(coef(summary(es_country))$ci.lb, 2)`, `r
+## round(coef(summary(es_country))$ci.ub, 2)`) .
+
+## custom forest plot
+df_rq1_ma %>% 
+    arrange(desc(g)) %>%
+    mutate(min_effect = if_else(ci_low < 0 & ci_up > 0, "no", "yes")) %>%
+    ggplot() +
+    aes(x = g, y = reorder(country, g), xmin = ci_low, xmax = ci_up) +
+    geom_vline(xintercept = 0, linetype = 2) +
+    geom_errorbarh(colour = "grey30", height = .1) + 
+    geom_point(aes(colour = min_effect), size = 3) +
+    geom_text(aes(x = 1,
+                  label = paste0(
+                      round(g, 2), " [", round(ci_low, 2), ", ", round(ci_up, 2), "]")),
+              hjust = 0) +
+    xlim(-0.5, 1.5) +
+    xlab("effect size (d)") +
     ylab("country") +
-    theme_bw()
+    guides(colour = "none") +
+    theme_minimal()
 
-## ## predict the scores based on the model
-## df_rq1_att %>% 
-##     mutate(predicted = predict(model_rq1_country_att)) %>%
-##     ggplot(aes(x = group,
-##                y = predicted,
-##                colour = country,
-##                group = country)) + 
-##     ## ggplot(aes(min_bias, y = mdl, colour = country, group = country)) + 
-##     geom_smooth(se = F, method = lm) +
-##     theme_bw() +
-##     guides(colour = "none") +
-##     theme(axis.text.x = element_blank(),
-##           axis.ticks = element_blank())
+## To determine the amount of variability in countries, we report
+## report heterogeneity measures:
 
-#' 
-## ----df-rq1-intercept-variance-------------------------------------------------
+## Q
+## reported in summary()
 
-## to see whether country-level variation is meaningful
-## compare with and without country as random intercept
+## heterogeneity (I2)
+## from: https://www.metafor-project.org/doku.php/tips:i2_multilevel_multivariate
+W <- diag(1/es_country$vi)
+X <- model.matrix(es_country)
+P <- W - W %*% X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W
+I_squared <- 100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_country$k - es_country$p)/sum(diag(P)))
 
-## model without random intercept
-model_rq1_country_att_without_random_intercept <- 
+## tau
+## reported in summary
 
-    lmerTest::lmer(
-                  amount ~ 1 + group + (1 | id),
-                  data = df_rq1_att
+##################################################
+## First party allocation
+
+## for dg_first
+
+## calculate d and sv
+## first calculate various measures (e.g. sd, r)
+df_rq1_ma <-
+
+    filter(df_rq1, measure == "dg_first") %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    group_by(country) %>%
+    summarise(n_sample = n(),
+              ## means per condition
+              mean_min_in_self = mean(`in`),
+              mean_min_out_self = mean(out),
+              ## correlation between conditions
+              r_means = cor(`in`, out),
+              ## standard deviation per condition
+              sd_min_in_self = sd(`in`),
+              sd_min_out_self = sd(out),
+              sd_z = sqrt(sd_min_in_self^2 + sd_min_out_self^2 + 
+                          2*r_means*sd_min_in_self*sd_min_in_self),
+              sd_rm = sd_z / (sqrt(2*(1 - r_means))),
+              ## effect size
+              d = (mean_min_in_self - mean_min_out_self) / sd_rm,
+              g = d * (1 - (3/((4*n_sample) - 9))), # NB not needed
+              ## sampling variance
+              sv = (((1/n_sample) + (d^2/(2*n_sample))) * (2*(1 - r_means))),
+              ## 95% confidence intervals
+              ci_low = g - qnorm(0.025, lower.tail = FALSE) * sqrt(sv),
+              ci_up = g - qnorm(0.975, lower.tail = FALSE) * sqrt(sv)
               )
 
-## Note model is re-fit with REML = FALSE to compare
-anova(model_rq1_country_att, 
-      model_rq1_country_att_without_random_intercept)
+## We show a cleveland plot of the raw data
+filter(df2, measure == "dg_first") %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    pivot_longer(cols = c(`in`, out), names_to = "group", values_to = "amount") %>%
+    group_by(country, group) %>%
+    summarise(mean = mean(amount)) %>%
+    ungroup %>%
+    ggplot() +
+    aes(mean, country) +
+    geom_line(aes(group = country)) +
+    geom_point(aes(colour = group), size = 3) +
+    xlim(0, 20) +
+    theme_minimal()
 
-#' 
-## ----df-rq1-additional---------------------------------------------------------
+## We then run the meta-analysis with country as random effect:
 
-##### demographics
-## include demographic variables
-## as robustness check
+## effect size moderated by country
+es_country <-
 
-## model with country
-model_rq1_country_att_demographics <- 
+    rma.mv(g, 
+           sv, 
+           random = list(~ 1 | country),
+           data = df_rq1_ma)
 
-    lmerTest::lmer(
-                  amount ~ 1 + group + age + gender + income + political +
-                      (1 | id) + (1 + group | country)
-                , data = df_rq1_att,
-                , contrasts = list(gender = "contr.sum")
+## coefficients
+summary(es_country)
+
+## As shown in the summary above, the overall effect size is `r
+## round(coef(summary(es_country))$estimate, 2)` (`r
+## round(coef(summary(es_country))$ci.lb, 2)`, `r
+## round(coef(summary(es_country))$ci.ub, 2)`).
+
+## custom forest plot
+df_rq1_ma %>% 
+    arrange(desc(g)) %>%
+    mutate(min_effect = if_else(ci_low < 0 & ci_up > 0, "no", "yes")) %>%
+    ggplot() +
+    aes(x = g, y = reorder(country, g), xmin = ci_low, xmax = ci_up) +
+    geom_vline(xintercept = 0, linetype = 2) +
+    geom_errorbarh(colour = "grey30", height = .1) + 
+    geom_point(aes(colour = min_effect), size = 3) +
+    geom_text(aes(x = 0.75,
+                  label = paste0(
+                      round(g, 2), " [", round(ci_low, 2), ", ", round(ci_up, 2), "]")),
+              hjust = 0) +
+    xlim(-0.5, 1.0) +
+    xlab("effect size (d)") +
+    ylab("country") +
+    guides(colour = "none") +
+    theme_minimal()
+
+## To determine the amount of variability in countries, we report
+## report heterogeneity measures:
+
+## Q
+## reported in summary()
+
+## heterogeneity (I2)
+## from: https://www.metafor-project.org/doku.php/tips:i2_multilevel_multivariate
+W <- diag(1/es_country$vi)
+X <- model.matrix(es_country)
+P <- W - W %*% X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W
+I_squared <- 100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_country$k - es_country$p)/sum(diag(P)))
+
+## tau
+## reported in summary
+
+##################################################
+### Third party allocations
+
+## for dg_third
+
+## Unlike the other two effect sizes, we use the standardized mean
+## difference effect (Cohen's $d_z$). We first show the mean
+## difference scores.
+
+filter(df_rq1, measure == "dg_third") %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    mutate(diff = `in` - out) %>%
+    group_by(country) %>%
+    mutate(mean_diff = mean(diff)) %>%
+    group_by(country) %>%
+    summarise(mean = mean(mean_diff))
+
+## calculate d and sv
+## first calculate various measures (e.g. sd, r)
+## see text for equations
+df_rq1_ma <-
+
+    filter(df_rq1, measure == "dg_third") %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    ## mutate(`in` = 20 - `in`,
+    ##        out = 20 - out) %>%    
+    ## mutate(`in` = both,
+    ##        out = 20 - `in`) %>%    
+    ## mutate(`in` = `in`- 10,
+    ##        out = out - 10) %>%
+    mutate(diff = `in` - out) %>%
+    group_by(country) %>%
+    mutate(mean_diff = mean(diff)) %>%
+    unnest(cols = c()) %>%
+    mutate(diff_mean_diff = diff - mean_diff,
+           diff_mean_diff_sq = (diff_mean_diff)^2
+           ) %>%
+    summarise(n_sample = n(),
+              mean_diff = mean(mean_diff),
+              sum_diff = sum(diff_mean_diff_sq),
+              sum_diff_n = sum_diff / (n_sample - 1),
+              sqrt_sum_diff_n = sqrt(sum_diff_n),
+              d_z = mean_diff / sqrt_sum_diff_n,
+              sv = sum_diff_n
               )
 
-## summary
-summary(model_rq1_country_att_demographics)
+## We then run the meta-analysis with country as random effect:
 
-## run anova to check significance of demographic vars
-anova(model_rq1_country_att_demographics, ddf = "Kenward-Roger")
+## effect size moderated by country
+es_country <-
 
-#' 
-#' ## Research question 2
-#' 
-#' ### Individual level 
-#' 
-#' For the individual level analysis of research question 2, we have three main
-#' moderators of interest: permeability, (in-group and out-group) trust, and
-#' self-esteem. We compare various models:
-#' 
-## ----df-rq2-------------------------------------------------------------------
-## peek at dataframe
-head(df_rq2)
+    rma.mv(d_z, 
+           sqrt_sum_diff_n, 
+           random = list(~ 1 | country),
+           data = df_rq1_ma)
 
-#' 
-## ----rq2-models---------------------------------------------------------------
-## minimal model
-model_rq2_min <-
+## coefficients
+summary(es_country)
+
+## As shown in the summary above, the overall effect size is `r
+## round(coef(summary(es_country))$estimate, 2)` (`r
+## round(coef(summary(es_country))$ci.lb, 2)`, `r
+## round(coef(summary(es_country))$ci.ub, 2)`).
+
+## To determine the amount of variability in countries, we report
+## report heterogeneity measures:
+
+## Q
+## reported in summary()
+
+## heterogeneity (I2)
+## from: https://www.metafor-project.org/doku.php/tips:i2_multilevel_multivariate
+W <- diag(1/es_country$vi)
+X <- model.matrix(es_country)
+P <- W - W %*% X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W
+I_squared <- 100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_country$k - es_country$p)/sum(diag(P)))
+
+## tau
+## reported in summary
+
+##################################################
+## Research Question 2
+
+##################################################
+## individual level
+
+#####
+## Below is an individual level analysis of a single moderator, as an example.
+
+## individualism--collectivism
+model_rq2_permeability <-
     
     lmerTest::lmer(
-                  amount ~ 1 +  group + (1 | id) + (1 | country)
+                  amount ~ 1 + permeability + (permeability | country)
                 , data = df_rq2_att)
 
-## model with esteem
-model_rq2_esteem <-
+## summarise
+summary(model_rq2_permeability)
+
+#####
+## below are specifications for all models
+## NB not all of these will run as simulated data does not have all moderators
+
+## NB to prevent errors in running entire scripts, the models with the
+## moderators not in the simulated data have been commented out
+
+## 3 models for permeability (hypothesis H2.1)
+
+## ## family ties
+## model_rq2_family_ties <-
+    
+##     lmerTest::lmer(
+##                   amount ~ 1 + family_ties + (family_ties | country)
+##                 , data = df_rq2_att)
+
+## individualism--collectivism
+model_rq2_permeability <-
     
     lmerTest::lmer(
-                  amount ~ 1 + group * self_esteem + (1 | id) + (1 | country)
+                  amount ~ 1 + permeability + (permeability | country)
                 , data = df_rq2_att)
 
-## model with trust (in/out)
-model_rq2_trust_in_out <-
+## ## model relational mobility
+## model_rq2_relational_mobility <-
     
-    lmerTest::lmer(
-                  amount ~ 1 + group * trust_in_out + (1 | id) + (1 | country)
-                , data = df_rq2_att)
+##     lmerTest::lmer(
+##                   amount ~ 1 + relational_mobility + (relational_mobility | country)
+##                 , data = df_rq2_att)
+
+## 2 models for trust (hypothesis H2.2)
+
+## ## model with trust (stranger)
+## model_rq2_trust_strangers <-
+    
+##     lmerTest::lmer(
+##                   amount ~ 1 + trust_strangers + (trust_strangers | country)
+##                 , data = df_rq2_att)
 
 ## model with trust (institutional)
 model_rq2_trust_institution <-
     
     lmerTest::lmer(
-                  amount ~ 1 + group * trust_institution + (1 | id) + (1 | country)
+                  amount ~ 1 + trust_institution + (trust_institution | country)
                 , data = df_rq2_att)
 
-## model permeability
-model_rq2_permeability <-
+## 1 model for self-esteem (hypothesis H2.3)
+
+## model with esteem
+model_rq2_esteem <-
     
     lmerTest::lmer(
-                  amount ~ 1 + group * permeability + (1 | id) + (1 | country)
+                  amount ~ 1 + self_esteem + (self_esteem | country)
                 , data = df_rq2_att)
 
-## ## compare models
-## FIXME not needed
-## anova(
-##     model_rq2_min, 
-##     model_rq2_esteem, 
-##     model_rq2_trust_in_out,
-##     model_rq2_trust_institution,
-##     model_rq2_permeability
-## )
+## 2 models for belief and status (hypothesis H2.4)
 
-#' 
-## ---- rq2-country-level-effects-----------------------------------------------
-## select model and run the following
-
-## graph with predicted country level min bias
-
-## predict the scores based on the model
-df_rq2_att %>%
-    mutate(mdl = predict(model_rq2_permeability)) %>%
-    ggplot(aes(permeability, y = mdl, colour = group)) + 
-    geom_smooth(se = FALSE, method = lm) +
-    theme_bw() +
-    theme(axis.text.x = element_blank(),
-        axis.ticks = element_blank())
-
-## graph of random effects with line of best fit
-
-## save coefficients
-coefs_model <- coef(model_rq2_permeability)
-
-## print random effects and best line
-## shown is permeability
-coefs_model$country %>%
-  mutate(country = rownames(coefs_model$country),
-         intercept = `(Intercept)`) %>% 
-  ggplot(aes(x = permeability, y = intercept, label = country)) + 
-  geom_point() + 
-  geom_smooth(se = F, method = lm) +
-  geom_label(nudge_y = 0.001, alpha = 0.5) +
-    theme_bw()
-
-#' 
-## ----df-rq2-additional, include = FALSE----------------------------------------
-
-##### other indicators
-## additional individual-level analyses
-## that include other measures linked to permeability
-## as robustness checks
-
-## NB not included as embeddedness and family ties not generated in
-## simulated data
-
-## ## model embeddedness
-## model_rq2_embeddedness <-
+## ## model with belief
+## model_rq2_belief <-
     
 ##     lmerTest::lmer(
-##         amount ~ 1 + group * embeddedness + (1 | id) + (1 | country/lab),
-##         data = df_rq2)
+##                   amount ~ 1 + belief + (belief | country)
+##                 , data = df_rq2_att)
 
-## ## model family ties
-## model_rq2_family_ties <-
+## ## model with status
+## model_rq2_status <-
     
 ##     lmerTest::lmer(
-##         amount ~ 1 + group * family_tie_pc1 + (1 | id)  + (1 | country),
-##         data = df_rq2)
+##                   amount ~ 1 + status + (status | country)
+##                 , data = df_rq2_att)
 
-#' 
-#' ### Country level 
-#' 
-#' We see if country-level predictors (Hofstede's individualism, the
-#' strength of family ties, in-group--out-group trust, and the Kinship
-#' Intensity Indicator) are significantly correlated with the
-#' countries' MGE means measures. Here we demonstrate with with
-#' Hofstede's individualism, the Kinship Intensity Indicator, and
-#' trust from country-level indicators shared by JS.
-#' 
-## ---- rq2-country-------------------------------------------------------------
+##################################################
+### Country level 
+ 
+## We see if country-level predictors (Hofstede's individualism, the
+## strength of family ties, in-group--out-group trust, and the Kinship
+## Intensity Indicator) are significantly correlated with the
+## countries' MGE means measures. Here we demonstrate with with
+## Hofstede's individualism, the Kinship Intensity Indicator, and
+## trust from country-level indicators shared by JS.
+
 ## read in country level indicators
 country_level_indicators <-
   
   read_csv("./country-level-indicators.csv")
 
-## save coefficients
-coefs_model <- coef(model_rq1_country_att)
+## calculate means
+country_level_means <-
 
-## save intercepts
-country_intercept <-
-  
-  coefs_model$country %>%
-  mutate(country = rownames(coefs_model$country),
-         intercept = `(Intercept)`)
+    df_rq2_att %>%
+    select(id, country, group, amount) %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    mutate(min_bias = `in` - out) %>%
+    group_by(country) %>%
+    summarise(mean_min_bias = mean(min_bias)) %>%
+    select(country, mean_min_bias)
 
 ## print random effects and best line
 ## shown is just dg_third_dummy
 joined <- 
   
-  left_join(country_intercept,
-    country_level_indicators,
-    by = "country")
+    left_join(country_level_means,
+              country_level_indicators,
+              by = "country") %>%
+    filter(!is.na(country_actual)) # for pipeline, remove NA countries
 
 ## correlation
-cor.test(joined$KII, joined$intercept) # KII
-cor.test(joined$Hofstede, joined$intercept) # Hofstede
-cor.test(joined$trust, joined$intercept) # trust
+cor.test(joined$KII, joined$mean_min_bias) # KII
+cor.test(joined$Hofstede, joined$mean_min_bias) # Hofstede
+cor.test(joined$trust, joined$mean_min_bias) # trust
 
 ## plot (all three measures)
 joined %>%
   pivot_longer(cols = c("KII", "Hofstede", "trust"),
                names_to = "country_measure", 
                values_to = "value") %>%
-  ggplot(aes(x = value, y = intercept, label = country)) + 
+  ggplot(aes(x = value, y = mean_min_bias, label = country)) + 
   geom_point() + 
   geom_smooth(se = F, method = lm) +
   geom_label(nudge_y = 0.0001, alpha = 0.5) +
   facet_wrap(. ~ country_measure) +
   theme_bw()
 
-#' 
-#' ## Research question 3
-#' 
-#' For research question 3, we assess whether real-world bias (towards
-#' the nation and/or family) is predicted by minimal group bias. 
-#' 
-## ----measures-real-world-bias-------------------------------------------------
+## example of ols
+model_rq2_ols <- lm(mean_min_bias ~ KII, data = joined)
+## biogeographic covariates to be included
+
+##################################################
+## Research Question 3
+
+## For research question 3, we assess whether real-world bias (towards
+## the nation and/or family) is predicted by minimal group bias.
+
 ## peek at dataframe
 head(df_rq3)
 
-#' 
-#' To avoid three-way interactions, we model each measure separately. We demonstrate the analysis with the attitude measures.
-#' 
-## ----rq3----------------------------------------------------------------------
+## To avoid three-way interactions, we model each measure
+## separately. We demonstrate the analysis with the attitude measures.
+
 ## real-world
 model_real_world <- 
 
     lmerTest::lmer(att_real_bias ~ att_min_bias * group_type + 
                        (1 | id)  + 
-                       (att_min_bias + group_type | country),
-                   data = df_rq3)
+                       (att_min_bias + group_type | country)
+                 , contrasts = list(group_type = "contr.sum")
+                 , data = df_rq3)
 
 ## summary
 summary(model_real_world)
 
-## ## run anova
-## anova(model_real_world, ddf = "Kenward-Roger")
-
-#' 
-## ----plot-rq3-----------------------------------------------------------------
-
+## plot rq3 att
 model_coefs <- 
   
   coef(model_real_world)$country %>% 
   rename(intercept = `(Intercept)`, slope = att_min_bias) %>% 
   rownames_to_column("country")
 
-model_coefs
+## model_coefs
+df_rq3_rand <- left_join(df_rq3_att, model_coefs, by = "country")
 
-df_rq3_rand <- left_join(df_rq3, model_coefs, by = "country")
-
+## create plot
 ggplot(data = df_rq3_rand, 
        mapping = aes(x = att_min_bias, 
                      y = att_real_bias, 
@@ -405,13 +563,8 @@ ggplot(data = df_rq3_rand,
   guides(colour = "none") +
   theme_bw()
 
-#' 
-#' The above will be repeated for minimal bias in both the first- and
-#' third-party dictator games.
-
-
-#' 
-## ----df-rq3-additional, include = FALSE----------------------------------------
+## The above will be repeated for minimal bias in both the first- and
+## third-party dictator games.
 
 ##### demographics
 ## include demographic variables
@@ -423,20 +576,16 @@ model_real_world_demographics <-
     
     lmerTest::lmer(
                   att_real_bias ~ att_min_bias * group_type +
-                      age + income + political +
+                      age + gender + income + political +
                       (1 | id)  + 
-                      (att_min_bias + group_type | country),
-                  data = df_rq3
+                      (att_min_bias + group_type | country)
+                , contrasts = list(group_type = "contr.sum",
+                                   gender = "contr.sum")
+                , data = df_rq3
               )
 
 ## summary
 summary(model_real_world_demographics)
 
 ## run anova to check significance of demographic vars
-anova(model_rq2_min_demographics, ddf = "Kenward-Roger")
-
-##################################################
-
-## adjust all p.values afterwards using Benjamini & Yekutieli
-## these should be reported alongside unadjusted values
-## p.adjust(p, method = "BY")
+anova(model_real_world_demographics, ddf = "Kenward-Roger")
