@@ -12,6 +12,7 @@ packages <- c(
   "tidyverse", # data wrangling
   "lme4", # random effects models
   "lmerTest", # random effects models
+  "metafor", # for meta-analysis
   "patchwork" # plots
 )
 ## create list of packages that have not been installed
@@ -70,7 +71,7 @@ for (i in c("att_min_bias", "att_nat_bias", "att_fam_bias",
 ## minimal group
 df_att_min_bias
 df_dg_min_bias_first
-df_dg_min_bias_third
+df_dg_min_bias_third 
 
 ## family group
 df_att_fam_bias
@@ -98,6 +99,147 @@ t.test(df$dg_fam_bias_third)
 t.test(df$att_nat_bias)
 t.test(df$dg_nat_bias_first)
 t.test(df$dg_nat_bias_third)
+
+## bias plot (Figure 1 in manuscript)
+
+## create long dataframe
+df2 <-
+
+    df %>%
+    ## ## NB to generate standardized, uncomment next line
+    ## mutate(across(contains("_bias"), ~(scale(.) %>% as.vector))) %>%
+    pivot_longer(cols = c(contains("_bias")),
+                 names_to = "measure",
+                 values_to = "value") %>%
+    separate(measure, into = c("type", "group", "bias", "dgtype"), sep = "_") %>%
+    mutate(type = case_when(type == "dg" & dgtype == "first" ~ "dg_first",
+                            type == "dg" & dgtype == "third" ~ "dg_third",
+                            type == "att" ~ "att",
+                            TRUE ~ NA_character_)) %>%
+    unite(col = "grouptype", c("type", "group"), remove = FALSE) %>%
+    mutate(group = factor(group, levels = c("min", "fam", "nat"),
+                          labels = c("min", "fam", "nat"))) %>%
+    mutate(min_value = case_when(type == "att" ~ -6,
+                                 dgtype == "first" ~ -20,
+                                 dgtype == "third" ~ -10
+                                 )) %>% 
+    mutate(max_value = case_when(type == "att" ~ 6,
+                                 dgtype == "first" ~ 20,
+                                 dgtype == "third" ~ 10
+                                 )) %>%
+    mutate(interval_value = case_when(type == "att" ~ 1,
+                                 dgtype == "first" ~ 4,
+                                 dgtype == "third" ~ 2
+                                 )) %>%
+    mutate(intercept_no_bias = case_when(type == "att" ~ 0,
+                                 dgtype == "first" ~ 0,
+                                 dgtype == "third" ~ 0
+                                 ))
+
+## generate plot of each measure, faceted by country
+for (measure in c("att", "dg_first", "dg_third")) {
+
+    df2_measure <-
+
+    df2 %>%
+    filter(type == measure)            
+    
+    bias_summary_measure <-
+        
+        df2_measure %>%
+        Rmisc::summarySE(measurevar = "value",
+                         groupvars = c("group", "country"),
+                         na.rm = TRUE)
+    
+    assign(paste0("plot_bias_", measure),
+
+           df2_measure %>%
+           ## mutate(intercept_no_bias = 0) %>%
+           ggplot(aes(x = group,
+                      y = value,
+                      fill = group, 
+                      colour = group
+                      )) +
+           geom_flat_violin(position = position_nudge(x = .25,
+                                                      y = 0),
+                            adjust = 2,
+                            trim = TRUE,
+                            na.rm = TRUE,
+                            alpha = 0.5) +
+           geom_point(position =
+                          position_jitter(width = .05, height = .05),
+                      size = 2,
+                      alpha = 0.4,
+                      na.rm = TRUE
+                      ) +
+           geom_errorbar(data = bias_summary_measure,
+                         aes(ymin = value - ci,
+                             ymax = value + ci),
+                         position = position_nudge(y = 0.25),
+                         colour = "grey40",
+                         width = 0,
+                         size = 1.5
+                         ) +
+           geom_point(data = bias_summary_measure,
+                      position = position_nudge(y = 0.25),
+                      size = 4,
+                      shape = 19,
+                      fill = "black",
+                      colour = "grey40"
+                      ) +
+           geom_hline(aes(yintercept = intercept_no_bias),
+                      linetype = "dashed",
+                      colour = "grey40") +
+           facet_grid(. ~ country,
+                      scales = "free",
+                      space = "free",
+                      shrink = TRUE,
+                      drop = TRUE
+                      ) +
+           scale_y_continuous(breaks = c(seq(unique(df2_measure$min_value),
+                                             unique(df2_measure$max_value),
+                                             unique(df2_measure$interval_value))),
+                              limits = c(unique(df2_measure$min_value),
+                                         unique(df2_measure$max_value))) +
+           scale_fill_brewer(palette = "Set2") +
+           scale_colour_brewer(palette = "Set2") +
+           labs(x = "",
+                y = "bias") +
+           guides(fill = "none",
+                  colour = "none"
+                  ) +
+           theme_classic() +
+           theme(text = element_text(size = 33),
+                 axis.text.x=element_text(angle = 45, hjust = 1),
+                 strip.placement = "outside")
+           )    
+    
+}
+
+## combine plots
+plot_bias <-
+
+    (
+        (plot_bias_att +
+         ggtitle("attitudinal bias")) +
+        (plot_bias_dg_first +
+         ggtitle("first-party bias")) +
+        (plot_bias_dg_third +
+         ggtitle("third-party bias"))
+    ) +
+    plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")"
+                   ## ,
+                   ##  caption = "bias not standardized" # "standardized"
+                    ) &
+    theme(plot.tag = element_text(face = "bold"))
+
+## plot included as figure 1 in RR 
+plot_bias
+
+## save plot for manuscript
+## plot_bias %>%
+##     ggsave(filename = paste(Sys.Date(), "bias-pilot-02.png", sep = "_"),  
+##            bg = "transparent")
 
 ##################################################
 ## Research question 1
@@ -134,6 +276,35 @@ df2 <-
 
 ##################################################
 ## Attitudes
+
+## calculate d and sv
+## first calculate various measures (e.g. sd, r)
+df_rq1_ma <-
+
+    filter(df2, measure == "att") %>%
+    pivot_wider(names_from = group, values_from = amount) %>%
+    group_by(country) %>%
+    summarise(n_sample = n(),
+              ## means per condition
+              mean_min_in_self = mean(`in`),
+              mean_min_out_self = mean(out),
+              ## correlation between conditions
+              r_means = cor(`in`, out),
+              ## standard deviation per condition
+              sd_min_in_self = sd(`in`),
+              sd_min_out_self = sd(out),
+              sd_z = sqrt(sd_min_in_self^2 + sd_min_out_self^2 + 
+                          2*r_means*sd_min_in_self*sd_min_in_self),
+              sd_rm = sd_z / (sqrt(2*(1 - r_means))),
+              ## effect size
+              d = (mean_min_in_self - mean_min_out_self) / sd_rm,
+              g = d * (1 - (3/((4*n_sample) - 9))), # NB not needed
+              ## sampling variance
+              sv = (((1/n_sample) + (d^2/(2*n_sample))) * (2*(1 - r_means))),
+              ## 95% confidence intervals
+              ci_low = g - qnorm(0.025, lower.tail = FALSE) * sqrt(sv),
+              ci_up = g - qnorm(0.975, lower.tail = FALSE) * sqrt(sv)
+              )
 
 ## We show a cleveland plot of the raw data, showing the mean attitude
 ## towards the in-group is greater than that to the out-group in both
@@ -223,7 +394,6 @@ I_squared <- 100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_countr
 
 ## calculate d and sv
 ## first calculate various measures (e.g. sd, r)
-## see text for equations
 df_rq1_ma <-
 
     filter(df2, measure == "dg_first") %>%
@@ -342,8 +512,6 @@ filter(df2, measure == "dg_third") %>%
     group_by(country) %>%
     summarise(mean = mean(mean_diff))
 
-## for dg_third
-
 ## calculate d and sv
 ## first calculate various measures (e.g. sd, r)
 ## see text for equations
@@ -360,7 +528,7 @@ df_rq1_ma <-
         mutate(diff = `in` - out) %>%
         group_by(country) %>%
         mutate(mean_diff = mean(diff)) %>%
-        unnest() %>%
+        unnest(cols = c()) %>%
         mutate(diff_mean_diff = diff - mean_diff,
                diff_mean_diff_sq = (diff_mean_diff)^2
                ) %>%
@@ -413,10 +581,6 @@ I_squared <- 100 * sum(es_country$sigma2) / (sum(es_country$sigma2) + (es_countr
 ## important). Tau showed zero heterogeneity ($\tau$ = `r
 ## es_country$tau2`).
 
-## Additional analyses
-
-Setting (in-lab vs on-line) can be included as moderator.
-
 ##################################################
 ## Research Question 2
 
@@ -468,12 +632,81 @@ for (measure_type in c("att", "dg_first", "dg_third")) {
 
 ## Analyses (all moderators, country-level analyses, robustness checks) are in the repo. Below is an individual level analysis of a single moderator.
 
-## model permeability
+## individualism--collectivism
 model_rq2_permeability <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + permeability +  
-                      (1 | country)
+                  min_bias ~ 1 + permeability + (1 | country)
+                , data = df_rq2_att)
+
+## summarise
+summary(model_rq2_permeability)
+
+#####
+## below are specifications for all models
+
+## 3 models for permeability (hypothesis H2.1)
+
+## family ties
+model_rq2_family_ties <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + family_ties + (1 | country)
+                , data = df_rq2_att)
+
+## individualism--collectivism
+model_rq2_permeability <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + permeability + (1 | country)
+                , data = df_rq2_att)
+
+## model relational mobility
+model_rq2_relational_mobility <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + relational_mobility + (1 | country)
+                , data = df_rq2_att)
+
+## 2 models for trust (hypothesis H2.2)
+
+## model with trust (strangers)
+model_rq2_trust_strangers <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + trust_strangers + (1 | country)
+                , data = df_rq2_att)
+
+## model with trust (institutional)
+model_rq2_trust_institution <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + trust_institution + (1 | country)
+                , data = df_rq2_att)
+
+## 1 model for self-esteem (hypothesis H2.3)
+
+## model with esteem
+model_rq2_esteem <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + self_esteem + (1 | country)
+                , data = df_rq2_att)
+
+## 2 models for belief and status (hypothesis H2.4)
+
+## model with belief
+model_rq2_belief <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + belief + (1 | country)
+                , data = df_rq2_att)
+
+## model with status
+model_rq2_belief <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + status + (1 | country)
                 , data = df_rq2_att)
 
 ## summarise
@@ -510,7 +743,7 @@ model_real_world <-
 
     lmerTest::lmer(att_real_bias ~ att_min_bias * group_type + 
                        (1 | id)  + 
-                       (att_min_bias + group_type | country/lab),
+                       (att_min_bias + group_type | country),
                    data = df_rq3_att)
 
 ## summary
@@ -542,11 +775,3 @@ ggplot(data = df_rq3_rand,
   facet_wrap(. ~ group_type) +
   guides(colour = "none") +
   theme_bw()
-
-
-
-
-
-
-
-
