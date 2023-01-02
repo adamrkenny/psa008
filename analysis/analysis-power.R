@@ -590,3 +590,58 @@ summary_sim_rq3 %>%
                             "_ri", random_intercept,
                             "_n", n_id,
                             "_c", n_country, ".csv"))
+
+##################################################
+## Additional power analyses
+
+## following reviewers' comments, we conduct an additional test to
+## allow us to detect differences among countries
+## this uses the additional mixed-model approach for RQ1
+
+## we run simple likelihood ratio test, comparing two models, with and
+## without the random intercept.
+
+## this is an example of estimating power for RQ2
+## for a given dataset using a single set of parameters
+
+## sigma in models
+residual_sd <- 1
+
+## effect size
+min_bias_es <- es_outcome_smaller
+
+## create dataframe that has 200 participants across 40 countries and has group variable
+df <- fake_data_n200_c40 %>%
+    pivot_longer(cols = c("dg_min_in_self", "dg_min_out_self"),
+                 names_to = "group", values_to = "amount")
+
+## select highest random intercept one for example
+random_intercept <- c(0.05)
+
+## fixed intercept 
+fixed <- c(
+    min_bias_es # outcome
+    , 0.2 # group beta
+)
+
+## random intercepts
+random <- list(
+    random_intercept # for id
+    , random_intercept # for country
+)
+
+## construct model
+model_rq1_with_country <- 
+    
+    makeLmer(
+        amount ~ group + (1 | id) + (1 | country),
+      ## , contrasts = list(group = "contr.sum")
+        ##   min_bias ~ 1 + (1 | country), 
+        fixef = fixed, 
+        VarCorr = random, 
+        sigma = residual_sd, 
+        data = df                 
+    )
+
+## likelihood ratio test
+doTest(model_rq1_with_country, compare( ~ group + (1 | id)))
