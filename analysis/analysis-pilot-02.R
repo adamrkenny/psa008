@@ -246,6 +246,59 @@ plot_bias
 ## Research question 1
 
 ##################################################
+## mixed-model approach
+
+## long dataframe with only relevant vars
+df_rq1 <-
+    
+    df %>%
+    select(id, lab, country, 
+          att_min_bias, dg_min_bias_first, dg_min_bias_third) %>%
+    ## ## standardize outcomes
+    ## mutate(att_min_bias = as.vector(scale(att_min_bias)),
+    ##        dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
+    ##        dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
+    pivot_longer(cols = c(contains("min_bias")), 
+                 names_to = "measure",
+                 values_to = "min_bias") %>%
+    mutate(measure = case_when(str_detect(measure, "att") ~ "att",
+                                  str_detect(measure, "first") ~ "dg_first",
+                                  str_detect(measure, "third") ~ "dg_third"
+                                  )) %>%
+    mutate(att_dummy = if_else(measure == "att", 1, 0),
+           dg_first_dummy = if_else(measure == "dg_first", 1, 0),
+           dg_third_dummy = if_else(measure == "dg_third", 1, 0)
+           )
+
+## extract dataframes with each measure
+for (measure_type in c("att", "dg_first", "dg_third")) {
+
+    ## filter by measure
+    df_rq1_measure_type <-
+        
+        df_rq1 %>%
+        filter(measure == measure_type)
+    
+    ## create object
+    assign(paste0("df_rq1_", measure_type), 
+           df_rq1_measure_type)
+    
+}
+
+#####
+## Model with one of the biases as an example
+
+## no predictor
+model_rq1 <-
+    
+    lmerTest::lmer(
+                  min_bias ~ 1 + (1 | country)
+                , data = df_rq1_att)
+
+## summarise
+summary(model_rq1)
+
+##################################################
 ## meta-analytical approach
 
 ## create long dataframe
