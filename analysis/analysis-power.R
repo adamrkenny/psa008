@@ -77,7 +77,7 @@ c_z <- qnorm(p = (0.05/3)/2, # adjusted alpha, halved for two-tailed
 ## create tibbles with estimated power
 
 ## across range of heterogeneity = tau squared
-for (heterogeneity in c(0.25, 0.5, 0.75)) {
+for (heterogeneity in c(.33, 1, 3)) {
     
     ## across range of countries
     for (n_k in range_countries) {
@@ -127,9 +127,9 @@ plot_power <-
     geom_line(alpha = 0.5, size = 1.5) +
     geom_hline(yintercept = 0.95, linetype = 2) +
     facet_wrap(. ~ hg,
-               labeller = labeller(hg = as_labeller(c("0.25" = "0.33 (low heterogeneity)",
-                                                      "0.5" = "1.00 (mid heterogeneity)",
-                                                      "0.75" = "3.00 (high heterogeneity)"
+               labeller = labeller(hg = as_labeller(c("0.33" = "0.33 (low heterogeneity)",
+                                                      "1" = "1.00 (mid heterogeneity)",
+                                                      "3" = "3.00 (high heterogeneity)"
                                                       )))) +
     scale_colour_brewer(palette = "Dark2",
                         name = "number of\ncountries",
