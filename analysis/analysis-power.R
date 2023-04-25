@@ -52,103 +52,6 @@ es_outcome_larger <- 0.35
 es_outcome_smaller <- 0.16
 
 ##################################################
-## RQ1 meta-analytic approach
-
-## based on:
-## Quintana (2018) script: https://osf.io/mbv9s
-## Valentine et al (2010) paper: https://doi.org/10.3102/1076998609346961
-
-## overall effect size
-effect_size <- es_outcome_smaller
-
-## number of countries
-## lower limit: 20 is a reasonable minimal number based on previous PSA projects
-## upper limit: 60, as 59 countries expressed an interest at first submission
-range_countries <- c(seq(20, 60, 10))
-
-## number of participants per treatment
-## corresponding to half total number of participants
-range_group <- c(25, 50, 75, 100, 125, 150, 175, 200)
-
-## calculate critical z
-c_z <- qnorm(p = (0.05/3)/2, # adjusted alpha, halved for two-tailed
-             lower.tail = FALSE)
-
-## create tibbles with estimated power
-
-## across range of heterogeneity = tau squared
-for (heterogeneity in c(.33, 1, 3)) {
-    
-    ## across range of countries
-    for (n_k in range_countries) {
-        
-        ## across range of number of participants per treatment
-        for (n_per_group in range_group) {
-            
-            eq1 <- 
-                ((n_per_group + n_per_group)/((n_per_group) * (n_per_group))) + 
-                ((effect_size^2)/(2*(n_per_group + n_per_group)))
-            
-            eq2 <- heterogeneity*(eq1)
-        
-            eq3 <- eq2 + eq1
-            
-            eq4 <- eq3/n_k
-            
-            eq5 <- (effect_size/sqrt(eq4))
-        
-            power <- (1 - pnorm(c_z - eq5)) # two-tailed
-            
-            power
-
-            ## create tibbles
-            assign(
-                paste0("tbl_", n_per_group, "_", n_k, "_", heterogeneity),
-                tibble(n = n_per_group, k = n_k, pwr = power, hg = heterogeneity))
-            
-        }
-    }
-    
-}
-
-## gather all tibbles 
-gather_tbls <- grep("tbl", names(.GlobalEnv), value=TRUE)
-tbls_list <- do.call("list", mget(gather_tbls))
-
-## create plot
-plot_power <-
-
-    bind_rows(tbls_list) %>%
-    mutate(n = n*2) %>% # double to get total sample size
-    mutate(k = as.factor(k)) %>%
-    ggplot() +
-    aes(x = n, y = pwr, group = k, colour = k) +
-    geom_point(size = 3) +
-    geom_line(alpha = 0.5, size = 1.5) +
-    geom_hline(yintercept = 0.95, linetype = 2) +
-    facet_wrap(. ~ hg,
-               labeller = labeller(hg = as_labeller(c("0.33" = "0.33 (low heterogeneity)",
-                                                      "1" = "1.00 (mid heterogeneity)",
-                                                      "3" = "3.00 (high heterogeneity)"
-                                                      )))) +
-    scale_colour_brewer(palette = "Dark2",
-                        name = "number of\ncountries",
-                        na.translate = FALSE) +
-    labs(x = "sample size (total n)",
-         y = "power (Beta)") +
-    guides(colour = guide_legend(reverse = TRUE)) +
-    theme_bw(base_size = 33) 
-
-## visualise plot
-plot_power
-
-## save plot
-## plot_power %>%
-##     ggsave(filename = paste(Sys.Date(), "power-rq1.png", sep = "_"),  
-##            bg = "transparent")
-
-##################################################
-## RQ2
 
 ## We conduct a power analysis for each research question (RQ), using
 ## one of the pre-specified mixed-effects models. For each fixed
@@ -292,11 +195,54 @@ gather_dfs <- grep("fake_data_n", names(.GlobalEnv), value = TRUE)
 list_dfs <- do.call("list", mget(gather_dfs))
 
 ##################################################
+## Research question 1
+
+## ##################################################
+## ## mixed-model approach
+
+## ## long dataframe with only relevant vars
+## df_rq1 <-
+    
+##     df %>%
+##     select(id, lab, country, 
+##           att_min_bias, dg_min_bias_first, dg_min_bias_third) %>%
+##     ## ## standardize outcomes
+##     ## mutate(att_min_bias = as.vector(scale(att_min_bias)),
+##     ##        dg_min_bias_first = as.vector(scale(dg_min_bias_first)),
+##     ##        dg_min_bias_third = as.vector(scale(dg_min_bias_third))) %>%
+##     pivot_longer(cols = c(contains("min_bias")), 
+##                  names_to = "measure",
+##                  values_to = "min_bias") %>%
+##     mutate(measure = case_when(str_detect(measure, "att") ~ "att",
+##                                   str_detect(measure, "first") ~ "dg_first",
+##                                   str_detect(measure, "third") ~ "dg_third"
+##                                   )) %>%
+##     mutate(att_dummy = if_else(measure == "att", 1, 0),
+##            dg_first_dummy = if_else(measure == "dg_first", 1, 0),
+##            dg_third_dummy = if_else(measure == "dg_third", 1, 0)
+##            )
+
+## ## extract dataframes with each measure
+## for (measure_type in c("att", "dg_first", "dg_third")) {
+
+##     ## filter by measure
+##     df_rq1_measure_type <-
+        
+##         df_rq1 %>%
+##         filter(measure == measure_type)
+    
+##     ## create object
+##     assign(paste0("df_rq1_", measure_type), 
+##            df_rq1_measure_type)
+    
+## }
+
+##################################################
 ## this is an example of estimating power for RQ2
 ## for a given dataset using a single set of parameters
 
-## n_sim <- 10 # to troubleshoot
-n_sim <- 1000 # actual run
+n_sim <- 10 # to troubleshoot
+## n_sim <- 1000 # actual run
 
 ## sigma in models
 residual_sd <- 1
@@ -304,8 +250,214 @@ residual_sd <- 1
 ## effect size
 min_bias_es <- es_outcome_smaller
 
-## extract dataframe that has 200 participants across 40 countries
-df <- fake_data_n200_c40
+## group beta
+beta <- 0.3
+## based on in-group vs out-group/stranger of beta 0.29 in Romano et
+## al (2021) https://doi.org/10.1038/s41467-021-24787-1
+
+## we set the lowest value for the variance to 0.05
+
+## for sensitivity analysis
+## create list of random intercepts
+list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80)
+
+## select value from list_random_intercepts for example
+random_intercept <- c(0.30)
+
+## fixed intercept 
+fixed <- c(
+    min_bias_es # outcome
+  , beta # group
+)
+
+## random intercepts
+random <- list(
+    random_intercept  
+)
+
+## dataframe
+## extract dataframe that has "n" participants across "c" countries
+## make long-form dataframe
+df <-
+
+    fake_data_n400_c60 %>%
+    pivot_longer(cols = c("dg_min_in_self", "dg_min_out_self"),
+                 names_to = "group",
+                 values_to = "decision") %>%
+    mutate(group = if_else(group == "dg_min_in_self", "in", "out")) %>%
+    select(id, country, group, decision)
+
+## extract number of countries and participants per country
+## required for producing output
+n_country <- pull(count(unique(select(df, country))))
+n_id <- pull(count(unique(select(df, id))))/n_country
+
+## construct model
+## in final analyses, we will include (group | id):
+## decision ~ group + (group | id) + (1 | country)
+## but we use a simplier specification for the power analysis
+model_rq1 <-
+    
+    makeLmer(
+        decision ~ group + (1 | country),
+        fixef = fixed, 
+        VarCorr = random, 
+        sigma = residual_sd, 
+        data = df                 
+    )
+
+## check overall power
+sim_rq1 <- 
+    
+    powerSim(
+        model_rq1,
+        test = fixed("group"),
+        nsim = n_sim,
+        alpha = 0.05/3
+    )
+
+summary(sim_rq1)
+
+## assign powersim to object for later use
+summary_sim_rq1 <-
+    
+    summary(sim_rq1) %>%
+    mutate(bias_es = min_bias_es,
+           random = random_intercept,
+           n_ids = n_id,
+           n_countries = n_country,
+           beta = beta
+           )
+
+## assign powercurve to object for later use
+assign(
+    ## name of object
+    paste0("pwr_rq2_es", min_bias_es,
+           "_ri", random_intercept,
+           "_n", n_id,
+           "_c", n_country),
+    ## summary
+    summary_sim_rq2
+            )
+
+## save object
+summary_sim_rq1 %>%
+    write_csv(path = paste0("pwr_rq1_es", min_bias_es,
+                            "_ri", random_intercept,
+                            "_n", n_id,
+                            "_c", n_country, ".csv"))
+
+##################################################
+## meta-analytical approach
+
+## based on:
+## Quintana (2018) script: https://osf.io/mbv9s
+## Valentine et al (2010) paper: https://doi.org/10.3102/1076998609346961
+
+## overall effect size
+effect_size <- es_outcome_smaller
+
+## number of countries
+## lower limit: 20 is a reasonable minimal number based on previous PSA projects
+## upper limit: 60, as 59 countries expressed an interest at first submission
+range_countries <- c(seq(20, 60, 10))
+
+## number of participants per treatment
+## corresponding to half total number of participants
+range_group <- c(25, 50, 75, 100, 125, 150, 175, 200)
+
+## calculate critical z
+c_z <- qnorm(p = (0.05/3)/2, # adjusted alpha, halved for two-tailed
+             lower.tail = FALSE)
+
+## create tibbles with estimated power
+
+## across range of heterogeneity = tau squared
+for (heterogeneity in c(.33, 1, 3)) {
+    
+    ## across range of countries
+    for (n_k in range_countries) {
+        
+        ## across range of number of participants per treatment
+        for (n_per_group in range_group) {
+            
+            eq1 <- 
+                ((n_per_group + n_per_group)/((n_per_group) * (n_per_group))) + 
+                ((effect_size^2)/(2*(n_per_group + n_per_group)))
+            
+            eq2 <- heterogeneity*(eq1)
+        
+            eq3 <- eq2 + eq1
+            
+            eq4 <- eq3/n_k
+            
+            eq5 <- (effect_size/sqrt(eq4))
+        
+            power <- (1 - pnorm(c_z - eq5)) # two-tailed
+            
+            power
+
+            ## create tibbles
+            assign(
+                paste0("tbl_", n_per_group, "_", n_k, "_", heterogeneity),
+                tibble(n = n_per_group, k = n_k, pwr = power, hg = heterogeneity))
+            
+        }
+    }
+    
+}
+
+## gather all tibbles 
+gather_tbls <- grep("tbl", names(.GlobalEnv), value=TRUE)
+tbls_list <- do.call("list", mget(gather_tbls))
+
+## create plot
+plot_power <-
+
+    bind_rows(tbls_list) %>%
+    mutate(n = n*2) %>% # double to get total sample size
+    mutate(k = as.factor(k)) %>%
+    ggplot() +
+    aes(x = n, y = pwr, group = k, colour = k) +
+    geom_point(size = 3) +
+    geom_line(alpha = 0.5, size = 1.5) +
+    geom_hline(yintercept = 0.95, linetype = 2) +
+    facet_wrap(. ~ hg,
+               labeller = labeller(hg = as_labeller(c("0.33" = "0.33 (low heterogeneity)",
+                                                      "1" = "1.00 (mid heterogeneity)",
+                                                      "3" = "3.00 (high heterogeneity)"
+                                                      )))) +
+    scale_colour_brewer(palette = "Dark2",
+                        name = "number of\ncountries",
+                        na.translate = FALSE) +
+    labs(x = "sample size (total n)",
+         y = "power (Beta)") +
+    guides(colour = guide_legend(reverse = TRUE)) +
+    theme_bw(base_size = 33) 
+
+## visualise plot
+plot_power
+
+## save plot
+## plot_power %>%
+##     ggsave(filename = paste(Sys.Date(), "power-rq1.png", sep = "_"),  
+##            bg = "transparent")
+
+##################################################
+## RQ2
+
+##################################################
+## this is an example of estimating power for RQ2
+## for a given dataset using a single set of parameters
+
+n_sim <- 10 # to troubleshoot
+## n_sim <- 1000 # actual run
+
+## sigma in models
+residual_sd <- 1
+
+## effect size
+min_bias_es <- es_outcome_smaller
 
 ## moderator beta
 beta <- 0.4
@@ -314,14 +466,16 @@ beta <- 0.4
 ## this selected State Trust as independent variable, which as as of
 ## 2022-11-22, was composed of 11 effects and a total of 2036 participants
 
-## we set the lowest value for the variance to 0.05 in our power
-## analyss
+## we set the lowest value for the variance to 0.05
 
 ## for sensitivity analysis
 ## create list of random intercepts
 list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80)
-## select one for example
+## select one value from list_rand_intercepts for example
 random_intercept <- c(0.30)
+
+## extract dataframe that has "n" participants across "c" countries
+df <- fake_data_n200_c40
 
 ## fixed intercept 
 fixed <- c(
@@ -387,87 +541,6 @@ summary_sim_rq2 %>%
                             "_c", n_country, ".csv"))
 
 ##################################################
-## warning, the code below will zap cpu! best to run the code above
-## which is an example using a single set of parameters
-
-## iterate over different effect sizes
-for (min_bias_es in c(es_outcome_smaller, es_outcome_larger)) {
-    
-    ## iterate over different random intercepts
-    for (random_intercept in list_random_intercepts) {
-        
-        ## iterate over different number of ids per country
-        for (df in list_dfs) {
-            
-            ## fixed intercept 
-            fixed <- c(
-                min_bias_es # outcome
-              , 0.4 # moderator
-            )
-            
-            ## random intercepts
-            random <- list(
-                random_intercept  
-            )
-            
-            ## construct model
-            model_rq2 <- 
-                
-                makeLmer(
-                    min_bias ~ self_esteem + (1 | country),
-                    fixef = fixed, 
-                    VarCorr = random, 
-                    sigma = residual_sd, 
-                    data = df                 
-                )
-            
-            ## check power
-            sim_rq2 <- 
-                
-                powerSim(
-                    model_rq2,
-                    test = fixed("self_esteem"),
-                    nsim = 1,
-                    alpha = 0.05/3
-                )
-
-            ## extract number of countries and participants per country
-            n_country <- pull(count(unique(select(df, country))))
-            n_id <- pull(count(unique(select(df, id))))/n_country
-            
-            ## assign powersim to object for later use
-            summary_sim_rq2 <-
-            
-                summary(sim_rq2) %>%
-                mutate(bias_es = min_bias_es,
-                       random = random_intercept,
-                       n_ids = n_id,
-                       n_countries = n_country
-                       )
-
-            ## assign powercurve to object for later use
-            assign(
-                ## name of object
-                paste0("pwr_rq2_es", min_bias_es,
-                       "_ri", random_intercept,
-                       "_n", n_id,
-                       "_c", n_country),
-                ## summary
-                summary_sim_rq2
-            )
-            
-        }
-    }
-}
-
-## gather all power simulations 
-gather_pwr_sim <- grep("pwr_rq2", names(.GlobalEnv), value = TRUE)
-list_pwr_sim <- do.call("list", mget(gather_pwr_sim))
-
-bind_rows(list_pwr_sim) %>%
-    write_csv(path = "./pwr-sims-combined.csv")
-
-##################################################
 ## RQ3
 
 ## We conduct a power analysis using the pre-specified mixed-effects
@@ -479,8 +552,8 @@ bind_rows(list_pwr_sim) %>%
 ## this is an example of estimating power for RQ3
 ## for a given dataset using a single set of parameters
 
-## n_sim <- 10 # to troubleshoot
-n_sim <- 1000 # actual run
+n_sim <- 10 # to troubleshoot
+## n_sim <- 1000 # actual run
 
 ## sigma in models
 residual_sd <- 1
@@ -645,3 +718,88 @@ model_rq1_with_country <-
 
 ## likelihood ratio test
 doTest(model_rq1_with_country, compare( ~ group + (1 | id)))
+
+##################################################
+## iterative code for RQ2
+
+##################################################
+## warning, the code below will zap cpu! best to run the code above
+## which is an example using a single set of parameters
+
+## iterate over different effect sizes
+for (min_bias_es in c(es_outcome_smaller, es_outcome_larger)) {
+    
+    ## iterate over different random intercepts
+    for (random_intercept in list_random_intercepts) {
+        
+        ## iterate over different number of ids per country
+        for (df in list_dfs) {
+            
+            ## fixed intercept 
+            fixed <- c(
+                min_bias_es # outcome
+              , 0.4 # moderator
+            )
+            
+            ## random intercepts
+            random <- list(
+                random_intercept  
+            )
+            
+            ## construct model
+            model_rq2 <- 
+                
+                makeLmer(
+                    min_bias ~ self_esteem + (1 | country),
+                    fixef = fixed, 
+                    VarCorr = random, 
+                    sigma = residual_sd, 
+                    data = df                 
+                )
+            
+            ## check power
+            sim_rq2 <- 
+                
+                powerSim(
+                    model_rq2,
+                    test = fixed("self_esteem"),
+                    nsim = 1,
+                    alpha = 0.05/3
+                )
+
+            ## extract number of countries and participants per country
+            n_country <- pull(count(unique(select(df, country))))
+            n_id <- pull(count(unique(select(df, id))))/n_country
+            
+            ## assign powersim to object for later use
+            summary_sim_rq2 <-
+            
+                summary(sim_rq2) %>%
+                mutate(bias_es = min_bias_es,
+                       random = random_intercept,
+                       n_ids = n_id,
+                       n_countries = n_country
+                       )
+
+            ## assign powercurve to object for later use
+            assign(
+                ## name of object
+                paste0("pwr_rq2_es", min_bias_es,
+                       "_ri", random_intercept,
+                       "_n", n_id,
+                       "_c", n_country),
+                ## summary
+                summary_sim_rq2
+            )
+            
+        }
+    }
+}
+
+## gather all power simulations 
+gather_pwr_sim <- grep("pwr_rq2", names(.GlobalEnv), value = TRUE)
+list_pwr_sim <- do.call("list", mget(gather_pwr_sim))
+
+bind_rows(list_pwr_sim) %>%
+    write_csv(path = "./pwr-sims-combined.csv")
+
