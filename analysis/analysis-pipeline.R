@@ -12,7 +12,7 @@
  
 ## load packages
 ## list of packages required
-packages <- c(
+packages <- (
   "tidyverse", # data wrangling
   "lme4", # random effects models
   "lmerTest", # random effects models
@@ -86,6 +86,95 @@ df_rq1_att %>%
 ##################################################
 ## mixed-model approach
 
+## we will also perform three linear mixed-effects analyses
+## NB below is example using one outcome, attitude --- this will be
+## repeated with the other two outcomes
+model_rq1_att <-
+    
+    lmerTest::lmer(
+                  amount ~ group + (1 | id) + (1 | country)
+                , contrasts = list(group = "contr.sum")
+                , data = df_rq1_att)
+
+## summarise
+summary(model_rq1_att)
+
+##### robustness checks
+
+## we then run robustness checks, including:
+
+## demographic variables
+## NB this will be with all models, included one model here for demonstration purposes
+
+## model with demographics
+model_rq1_att_demographics <- 
+    
+    lmerTest::lmer(
+                  amount ~ group + 
+                      age + gender + income + political +
+                      (1 | id) + (1 | country)
+                , contrasts = list(group = "contr.sum",
+                                   gender = "contr.sum")
+                , data = df_rq2_att
+              )
+
+## summary
+summary(model_rq1_att_demographics)
+
+## ## check with familiarity
+## ## NB this will be with all models, included one model here for demonstration purposes
+## ## NB commented out as familiarity is not in simulated data
+## model_rq1_att_familiarity <- 
+    
+##     lmerTest::lmer(
+##                   amount ~ group + 
+##                       familiarity +
+##                       (1 | id) + (1 | country)
+##                 , contrasts = list(group = "contr.sum",
+##                                    familiarity = "contr.sum")
+##                 , data = df_rq2_att
+##               )
+
+## ## summary
+## summary(model_rq1_att_familiarity)
+
+## ## check with attention check
+## ## NB this will be with all models, included one model here for demonstration purposes
+## ## NB commented out as attention check (correct, fail) is not in simulated data
+## model_rq1_att_attention <- 
+    
+##     lmerTest::lmer(
+##                   amount ~ group + 
+##                       attention_check +
+##                       (1 | id) + (1 | country)
+##                 , contrasts = list(group = "contr.sum",
+##                                    attention_check = "contr.sum")
+##                 , data = df_rq2_att
+##               )
+
+## ## summary
+## summary(model_rq1_att_attention)
+
+## ## check with experimental setting
+## ## NB this will be with all models, included one model here for demonstration purposes
+## ## NB commented out as experimental setting (lab, on-line) is not in simulated data
+## model_rq1_att_experimental_setting <- 
+    
+##     lmerTest::lmer(
+##                   amount ~ group + 
+##                       experimental_setting +
+##                       (1 | id) + (1 | country)
+##                 , contrasts = list(group = "contr.sum",
+##                                    experimental_setting = "contr.sum")
+##                 , data = df_rq2_att
+##               )
+
+## ## summary
+## summary(model_rq1_att_experimental_setting)
+
+##################################################
+## meta-analytical approach
+
 ## long dataframe with only relevant vars
 df_rq1 <-
     
@@ -122,22 +211,6 @@ for (measure_type in c("att", "dg_first", "dg_third")) {
            df_rq1_measure_type)
     
 }
-
-#####
-## Model with one of the biases as an example
-
-## no predictor
-model_rq1 <-
-    
-    lmerTest::lmer(
-                  min_bias ~ 1 + (1 | country)
-                , data = df_rq1_att)
-
-## summarise
-summary(model_rq1)
-
-##################################################
-## meta-analytical approach
 
 ##################################################
 ## Attitudes
@@ -437,95 +510,6 @@ es_country_setting <-
 
 ## coefficients
 summary(es_country_setting)
-
-##################################################
-## additional mixed-model approach
-
-## we will also perform three linear mixed-effects analyses
-## NB below is example using one outcome, attitude --- this will be
-## repeated with the other two outcomes
-model_rq1_att <-
-    
-    lmerTest::lmer(
-                  amount ~ group + (1 | id) + (1 | country)
-                , contrasts = list(group = "contr.sum")
-                , data = df_rq1)
-
-## summarise
-summary(model_rq1_att)
-
-##### robustness checks
-
-## ## we then run robustness checks, including:
-
-## ## demographic variables
-## ## NB this will be with all models, included one model here for demonstration purposes
-
-## ## model with demographics
-## model_rq1_att_demographics <- 
-    
-##     lmerTest::lmer(
-##                   amount ~ group + 
-##                       age + gender + income + political +
-##                       (1 | id) + (1 | country)
-##                 , contrasts = list(group = "contr.sum",
-##                                    gender = "contr.sum")
-##                 , data = df_rq2_att
-##               )
-
-## ## summary
-## summary(model_rq1_att_demographics)
-
-## ## check with familiarity
-## ## NB this will be with all models, included one model here for demonstration purposes
-## ## NB commented out as familiarity is not in simulated data
-## model_rq1_att_familiarity <- 
-    
-##     lmerTest::lmer(
-##                   amount ~ group + 
-##                       familiarity +
-##                       (1 | id) + (1 | country)
-##                 , contrasts = list(group = "contr.sum",
-##                                    familiarity = "contr.sum")
-##                 , data = df_rq2_att
-##               )
-
-## ## summary
-## summary(model_rq1_att_familiarity)
-
-## ## check with attention check
-## ## NB this will be with all models, included one model here for demonstration purposes
-## ## NB commented out as attention check (correct, fail) is not in simulated data
-## model_rq1_att_attention <- 
-    
-##     lmerTest::lmer(
-##                   amount ~ group + 
-##                       attention_check +
-##                       (1 | id) + (1 | country)
-##                 , contrasts = list(group = "contr.sum",
-##                                    attention_check = "contr.sum")
-##                 , data = df_rq2_att
-##               )
-
-## ## summary
-## summary(model_rq1_att_attention)
-
-## ## check with experimental setting
-## ## NB this will be with all models, included one model here for demonstration purposes
-## ## NB commented out as experimental setting (lab, on-line) is not in simulated data
-## model_rq1_att_experimental_setting <- 
-    
-##     lmerTest::lmer(
-##                   amount ~ group + 
-##                       experimental_setting +
-##                       (1 | id) + (1 | country)
-##                 , contrasts = list(group = "contr.sum",
-##                                    experimental_setting = "contr.sum")
-##                 , data = df_rq2_att
-##               )
-
-## ## summary
-## summary(model_rq1_att_experimental_setting)
 
 ##################################################
 ## Research Question 2
