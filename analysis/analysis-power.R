@@ -259,8 +259,7 @@ beta <- 0.3
 
 ## for sensitivity analysis
 ## create list of random intercepts
-list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80)
-
+list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80, 1.5)
 ## select value from list_random_intercepts for example
 random_intercept <- c(0.30)
 
@@ -470,7 +469,8 @@ beta <- 0.4
 
 ## for sensitivity analysis
 ## create list of random intercepts
-list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80)
+list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80, 1.5)
+
 ## select one value from list_rand_intercepts for example
 random_intercept <- c(0.30)
 
@@ -594,7 +594,7 @@ beta_interaction <- 1.0
 
 ## for sensitivity analysis
 ## create list of random intercepts
-list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80)
+list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80, 1.5)
 ## select one for example
 random_intercept <- c(0.30)
 
