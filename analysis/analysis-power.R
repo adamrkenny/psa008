@@ -271,7 +271,7 @@ fixed <- c(
 
 ## random intercepts
 random <- list(
-    random_intercept  
+    random_intercept
 )
 
 ## dataframe
@@ -279,7 +279,7 @@ random <- list(
 ## make long-form dataframe
 df <-
 
-    fake_data_n400_c60 %>%
+    fake_data_n200_c40 %>%
     pivot_longer(cols = c("dg_min_in_self", "dg_min_out_self"),
                  names_to = "group",
                  values_to = "decision") %>%
@@ -546,7 +546,7 @@ summary_sim_rq2 %>%
 ## We conduct a power analysis using the pre-specified mixed-effects
 ## model. For each fixed effect we specify the beta coefficients, for
 ## each random effect the variance, and finally the error variance
-## (\ie sigma). The error variance is set to 0.1.
+## (\ie sigma). The error variance is set to 1.
 
 ##################################################
 ## this is an example of estimating power for RQ3
@@ -575,8 +575,10 @@ residual_sd <- 1
 
 real_bias_es <- es_outcome_smaller
 
-## extract dataframe that has 200 participants across 40 countries
-df <- fake_data_n200_c40 %>%
+## extract dataframe that has "n" participants across "c" countries
+df <-
+
+    fake_data_n200_c40 %>%
     ## then adjust dataframe to contain relevant predictors (MGE, group type)
     pivot_longer(cols = c("nat_bias", "fam_bias"),
                  names_to = "group_type", values_to = "real_bias") %>%
@@ -585,8 +587,8 @@ df <- fake_data_n200_c40 %>%
     select(id, country, MGE, group_type, real_bias)
 
 ## moderators beta
-beta_mge <- 0.2 
-beta_group_type <- 0.0
+beta_mge <- 0.3
+beta_group_type <- 0.3 # same as for rq1
 beta_interaction <- 1.0
 
 ## we set the lowest value for the variance to 0.05 in our power
@@ -608,15 +610,15 @@ fixed <- c(
 
 ## random intercepts
 random <- list(
-    random_intercept # for id
-  , random_intercept # for country
+    random_intercept # for country
 )
 
 ## construct model
 model_rq3 <- 
     
     makeLmer(
-        real_bias ~ MGE * group_type + (1 | id) + (1 | country), # we use simplier random structure to make code easier to run
+        real_bias ~ MGE * group_type +
+            (1 | country), # we use simplier random structure to make code easier to run
         fixef = fixed, 
         VarCorr = random, 
         sigma = residual_sd, 
@@ -628,7 +630,7 @@ sim_rq3 <-
     
     powerSim(
         model_rq3,
-        test = fixed("MGE:group_type"),
+        test =  fcompare(~ MGE + group_type),
         nsim = n_sim,
         alpha = 0.05/3
     )
@@ -655,7 +657,7 @@ assign(
            "_n", n_id,
            "_c", n_country),
     ## summary
-    summary_sim_rq2
+    summary_sim_rq3
             )
 
 summary_sim_rq3 %>%
