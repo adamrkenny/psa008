@@ -132,7 +132,7 @@ for (n_countries in list_n_countries) {
         self_esteem_score <- 
             
             rnorm(n_ids
-                , mean = 3.5, sd = 1.1 # frome Robins-et-al_2001
+                , mean = 3.5, sd = 1.1 # from Robins-et-al_2001
                   ) 
         
         ## add to artificial data frame
@@ -238,7 +238,7 @@ list_dfs <- do.call("list", mget(gather_dfs))
 ## }
 
 ##################################################
-## this is an example of estimating power for RQ2
+## this is an example of estimating power for RQ1
 ## for a given dataset using a single set of parameters
 
 n_sim <- 10 # to troubleshoot
