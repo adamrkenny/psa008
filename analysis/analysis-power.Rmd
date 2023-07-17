@@ -7,12 +7,25 @@ bibliography: references.bib
 
 output:
   html_document:
+    number_sections: true
+    toc: true
     code_folding: show
 ---
 
-This document describes the power analysis for PSA 008 Minimal Groups.
+# README {-}
 
-```{r, package-information, class.source = 'fold-hide'}
+This document describes the power analysis for PSA 008 Minimal
+Groups. It is split into three parts. 
+
+Section 1 details how to set parameters such as the number of simulations and the effect size. By default, the number of simulations is set to 1 so that this document can be compiled. To reproduce the power analysis results reported in the manuscript, this should be changed to 1,000. Setting the number of simulations to 1,000 will mean the code takes a long time to run, especially Section 3 as detailed below. This section also simulates the data used for the power analysis.
+
+Section 2 presents the code for the power analysis, for each research question. The code uses one of the simulated datasets, namely one with 200 participants across 40 countries. We use this as an example as it represents a number of participants and countries we reasonably assume we can recruit from. You  are welcome to change the dataset, as well as any of the parameters such as the effect size and random intercept.
+
+Section 3 is the code used for the power analysis output reported in the manuscript. This iterates over different combinations of number of participants, number of countries, effect sizes, and random intercepts. This is time and resource intensive, with each simulation taking approximately 5 hours to complete when using 1,000 simulation. We used the University of Oxford Advanced Research Computing (ARC) facility (http://dx.doi.org/10.5281/zenodo.22558). This is why users should troubleshoot using a smaller number of simulations.
+
+# Packages and session information {-}
+
+```{r, package-information, message = FALSE, class.source = 'fold-hide'}
 ## R package information
 
 ## load-packages
@@ -41,8 +54,15 @@ set.seed(1970) # to reproduce analysis
 sessionInfo() # session info
 ```
 
-## Input artificial data
- 
+# Set parameters and input artificial data {#sec:parameters}
+
+The first thing to set is the number of simulations. This is set to 1 for troubleshooting, but in order to reproduce the results of the power analysis used in the manuscript the number of simulations should be set to 1,000. This can be acheived by placing ## in front of the number of simulations you do not want.
+
+```{r, n-simulations}
+n_sim <- 1 # to troubleshoot
+## n_sim <- 1000 # actual run
+```
+
 Our outcome measures of bias will be set to both a larger and smaller value; we looked to the literature for an indication of effect size. The larger value is based on @Balliet-et-al_2014, a meta-analysis of intergroup discrimination in behavioural economic games. The overall effect size of games involving experimentally created (i.e. minimal) groups was $d = 0.35 (0.27--0.42)$. The value is similar to the overall effect size of $d = 0.37 (0.28--0.45; n = 150)$ in games involving "artificial" (i.e. minimal) groups reported in @Lane_2016. We set the smaller effect size to 0.16, which is approximately half the larger values.
 
 ```{r, outcomes}
@@ -191,16 +211,15 @@ gather_dfs <- grep("fake_data_n", names(.GlobalEnv), value = TRUE)
 list_dfs <- do.call("list", mget(gather_dfs))
 ```
 
-# Research question 1
+# Example power analysis
 
-## mixed-model approach
+## Research question 1
+
+### Mixed-model approach
 
 This is an example of estimating power for RQ1 for a given dataset using a single set of parameters.
 
 ```{r, rq1, cache = TRUE}
-n_sim <- 10 # to troubleshoot
-## n_sim <- 1000 # actual run
-
 ## sigma in models
 residual_sd <- 1
 
@@ -306,7 +325,7 @@ summary_sim_rq1 %>%
 
 ```
 
-## meta-analytical approach
+### Meta-analytical approach
 
 Meta-analytical approach based on "meta_analysis_power.R" script from @Quintana-Tiebel_2018 and @Valentine-et-al_2010.
 
@@ -397,21 +416,17 @@ plot_power <-
 ## visualise plot
 plot_power
 
-## ## save plot # comment out to save in folder 
-## plot_power %>%
-##     ggsave(filename = paste(Sys.Date(), "power-rq1.png", sep = "_"),  
-##            bg = "transparent")
-
+ ## save plot # comment out to save in folder 
+ plot_power %>%
+     ggsave(filename = paste(Sys.Date(), "power-rq1.png", sep = "_"),  
+            bg = "transparent")
 ```
 
-## RQ2
+## Research question 2
 
 This is an example of estimating power for RQ2 for a given dataset using a single set of parameters.
 
 ```{r, rq2, cache = TRUE}
-n_sim <- 10 # to troubleshoot
-## n_sim <- 1000 # actual run
-
 ## sigma in models
 residual_sd <- 1
 
@@ -516,12 +531,11 @@ rq2_country_pwr <-
 
 ## print
 rq2_country_pwr$r
-
 ```
 
-The smallest correlation coefficient we can detect is `r = rq2-country-pwr$r`.
+The smallest correlation coefficient we can detect is `r rq2_country_pwr$r`.
 
-# RQ3
+## Research question 3
 
 We conduct a power analysis using the pre-specified mixed-effects model. For each fixed effect we specify the beta coefficients, for each random effect the variance, and finally the error variance (\ie sigma). The error variance is set to 1.
 
@@ -531,9 +545,6 @@ Effects sizes relevant to national groups in economic tasks are a meta-analysis 
 size to 0.16, which is the same used for RQ1 and RQ2.
 
 ```{r, rq3, cache = TRUE}
-n_sim <- 10 # to troubleshoot
-## n_sim <- 1000 # actual run
-
 ## sigma in models
 residual_sd <- 1
 
@@ -678,14 +689,250 @@ model_rq1_with_country <-
 
 ## likelihood ratio test
 doTest(model_rq1_with_country, compare( ~ group + (1 | id)))
+```
 
+# Iterative code
+
+Warning, the code below will zap cpu! best to run the code above which is an example using a single set of parameters. The output (saved in .csv files in the repository) are called here for easy viewing.
+
+```{r, rq1-1000-codebook, echo = FALSE, message = FALSE, results = "asis"}
+read_csv("pwr-rqs-codebook.csv") %>%
+  add_row(header = "powered", notes = "given the parameters, is it sufficiently powered at 0.95?") %>%
+knitr::kable(., caption = "Codebook for power analysis output tables")
+```
+
+```{r, rq1-1000-results, echo = FALSE, message = FALSE, results = "asis"}
+read_csv("pwr-rq1-sims-combined.csv") %>%
+  arrange(bias_es, random, n_ids, n_countries) %>%
+  mutate(powered = if_else(mean > 0.95, "yes", "no")) %>%
+    select(n_ids, n_countries, successes, bias_es,	random,	trials,	mean,	lower, upper,	powered) %>%
+knitr::kable(., caption = "RQ1 power analysis (n simulations = 1,000)")
+```
+
+```{r, rq2-1000-results, echo = FALSE, message = FALSE, results = "asis"}
+read_csv("pwr-rq2-sims-combined.csv") %>%
+  arrange(bias_es, random, n_ids, n_countries) %>%
+  mutate(powered = if_else(mean > 0.95, "yes", "no")) %>%
+    select(n_ids, n_countries, successes, bias_es,	random,	trials,	mean,	lower, upper,	powered) %>%
+knitr::kable(., caption = "RQ2 power analysis (n simulations = 1,000)")
+```
+
+```{r, rq3-1000-results, echo = FALSE, message = FALSE,  results = "asis"}
+read_csv("pwr-rq3-sims-combined.csv") %>%
+  arrange(bias_es, random, n_ids, n_countries) %>%
+  mutate(powered = if_else(mean > 0.95, "yes", "no")) %>%
+    select(n_ids, n_countries, successes, bias_es,	random,	trials,	mean,	lower, upper,	powered) %>%
+knitr::kable(., caption = "RQ3 power analysis (n simulations = 1,000)")
+```
+
+```{r, halt-iter}
+## to allow iterative code to run, comment out:
 knitr::knit_exit()
 ```
 
 
-## Iterative code
+```{r, rq1-iterr, cache = TRUE}
+n_sim <- 10 # to troubleshoot
+## n_sim <- 1000 # actual run
 
-Warning, the code below will zap cpu! best to run the code above which is an example using a single set of parameters
+## sigma in models
+residual_sd <- 1
+
+## effect size
+min_bias_es <- es_outcome_smaller
+
+## group beta
+beta <- 0.3
+## based on in-group vs out-group/stranger of beta 0.29 in Romano et
+## al (2021) https://doi.org/10.1038/s41467-021-24787-1
+
+## we set the lowest value for the variance to 0.05
+
+## for sensitivity analysis
+## create list of random intercepts
+list_random_intercepts <- c(0.05, 0.30, 0.55, 0.80, 1.5)
+## select value from list_random_intercepts for example
+random_intercept <- c(0.30)
+
+## fixed intercept 
+fixed <- c(
+    min_bias_es # outcome
+  , beta # group
+)
+
+## random intercepts
+random <- list(
+    random_intercept
+)
+
+## dataframe
+## extract dataframe that has "n" participants across "c" countries
+## make long-form dataframe
+df <-
+
+    fake_data_n200_c40 %>%
+    pivot_longer(cols = c("dg_min_in_self", "dg_min_out_self"),
+                 names_to = "group",
+                 values_to = "decision") %>%
+    mutate(group = if_else(group == "dg_min_in_self", "in", "out")) %>%
+    select(id, country, group, decision)
+
+## extract number of countries and participants per country
+## required for producing output
+n_country <- pull(count(unique(select(df, country))))
+n_id <- pull(count(unique(select(df, id))))/n_country
+
+## construct model
+## in final analyses, we will include (group | id):
+## decision ~ group + (group | id) + (1 | country)
+## but we use a simplier specification for the power analysis
+model_rq1 <-
+    
+    makeLmer(
+        decision ~ group + (1 | country),
+        fixef = fixed, 
+        VarCorr = random, 
+        sigma = residual_sd, 
+        data = df                 
+    )
+
+## check overall power
+sim_rq1 <- 
+    
+    powerSim(
+        model_rq1,
+        test = fixed("group"),
+        nsim = n_sim,
+        alpha = 0.05/3
+    )
+
+summary(sim_rq1)
+
+## assign powersim to object for later use
+summary_sim_rq1 <-
+    
+    summary(sim_rq1) %>%
+    mutate(bias_es = min_bias_es,
+           random = random_intercept,
+           n_ids = n_id,
+           n_countries = n_country,
+           beta = beta
+           )
+
+## assign powercurve to object for later use
+assign(
+    ## name of object
+    paste0("pwr_rq1_es", min_bias_es,
+           "_ri", random_intercept,
+           "_n", n_id,
+           "_c", n_country),
+    ## summary
+    summary_sim_rq1
+            )
+
+## save object
+summary_sim_rq1 %>%
+    write_csv(path = paste0("pwr_rq1_es", min_bias_es,
+                            "_ri", random_intercept,
+                            "_n", n_id,
+                            "_c", n_country, 
+                            ".csv"))
+
+```
+
+```{r, rq1-iter}
+## iterate over different effect sizes
+for (min_bias_es in c(es_outcome_smaller, es_outcome_larger)) {
+    
+    ## iterate over different random intercepts
+    for (random_intercept in list_random_intercepts) {
+        
+        ## iterate over different number of ids per country
+        for (df in list_dfs) {
+          
+          ## dataframe
+## extract dataframe that has "n" participants across "c" countries
+## make long-form dataframe
+df <-
+
+    df %>%
+    pivot_longer(cols = c("dg_min_in_self", "dg_min_out_self"),
+                 names_to = "group",
+                 values_to = "decision") %>%
+    mutate(group = if_else(group == "dg_min_in_self", "in", "out")) %>%
+    select(id, country, group, decision)
+            
+            ## fixed intercept 
+            fixed <- c(
+                min_bias_es # outcome
+              , 0.4 # moderator
+            )
+            
+            ## random intercepts
+            random <- list(
+                random_intercept  
+            )
+            
+            ## construct model
+            model_rq1 <-
+    
+              makeLmer(
+                decision ~ group + (1 | country),
+                fixef = fixed, 
+                VarCorr = random, 
+                sigma = residual_sd, 
+                data = df                 
+              )
+
+            ## check power
+            sim_rq1 <- 
+    
+            powerSim(
+              model_rq1,
+              test = fixed("group"),
+              nsim = n_sim,
+              alpha = 0.05/3
+            )
+            
+            ## extract number of countries and participants per country
+            n_country <- pull(count(unique(select(df, country))))
+            n_id <- pull(count(unique(select(df, id))))/n_country
+            
+            ## assign powersim to object for later use
+            summary_sim_rq1 <-
+            
+                summary(sim_rq1) %>%
+                mutate(bias_es = min_bias_es,
+                       random_var = random_intercept,
+                       n_ids = n_id,
+                       n_countries = n_country
+                       )
+
+            ## assign powercurve to object for later use
+            assign(
+                ## name of object
+                paste0("pwr_rq1_es", min_bias_es,
+                       "_ri", random_intercept,
+                       "_n", n_id,
+                       "_c", n_country),
+                ## summary
+                summary_sim_rq1
+            )
+            
+        }
+    }
+}
+
+## gather all power simulations 
+gather_pwr_sim <- grep("pwr_rq1", names(.GlobalEnv), value = TRUE)
+list_pwr_sim <- do.call("list", mget(gather_pwr_sim))
+
+bind_rows(list_pwr_sim) %>%
+    arrange(bias_es, random, n_ids, n_countries) %>%
+mutate(powered = if_else(mean > 0.95, "yes", "no")) %>%
+    select(n_ids, n_countries, successes, bias_es,	random,	trials,	mean,	lower, upper,	powered) %>%
+    write_csv(path = "./pwr-rq1-sims-combined-trial.csv") # FIXME
+```
 
 ```{r, rq2-iter}
 ## iterate over different effect sizes
