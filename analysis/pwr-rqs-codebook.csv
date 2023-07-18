@@ -1,6 +1,6 @@
 header,notes
 successes,number of simulations for which an effect was detected
-trials,Total number of simulations
+trials,total number of simulations
 mean,power to reject the null hypothesis of zero trend in predictor(s)
 lower,lower bound of 95 perc confidence interval
 upper,upper bound of 95 perc confidence interval
@@ -9,4 +9,4 @@ random,value of random variance
 n_ids,number of participants per country in simulated dataframe
 n_countries,number of countries in simulated dataframe
 beta,beta coefficient for fixed effect
-Class,"which research question (rq) the power analysis relates to (rq1, rq2, rq3)"
+class,"which research question (rq) the power analysis relates to (rq1, rq2, rq3)"
