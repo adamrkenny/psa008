@@ -72,3 +72,19 @@ letters_beyond_single_digits <- function(length.out) {
          function(x) paste(rep(a[x], grp[x]), collapse = ""),
          character(1L))
 }
+
+## from https://stackoverflow.com/a/51465934
+#' Collapse the values within a grouped dataframe
+#' 
+#' 
+collapse_rows_df <- function(df, variable){
+
+  group_var <- enquo(variable)
+
+  df %>%
+    group_by(!! group_var) %>%
+    mutate(groupRow = 1:n()) %>%
+    ungroup() %>%
+    mutate(!!quo_name(group_var) := ifelse(groupRow == 1, as.character(!! group_var), "")) %>%
+    select(-c(groupRow))
+}
