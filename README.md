@@ -47,12 +47,14 @@ The R script [analysis-pilot-02.R](./analysis/analysis-pilot-02.R)
 
 ### power
 
-The R script [analysis-power.R](./analysis/analysis-power.R) contains
-the power analysis, using the artificial data created in
-[data-simulation.R](./analysis/data-simulation.R) and the models
-specified in the analysis pipeline. The power analysis was run with
-1000 simulations; users might want to run with fewer simulations (n =
-100 and/or set a different number of cores) for efficiency. We
+The R script [analysis-power.R](./analysis/analysis-power.R), Rmd file
+[analysis-power.Rmd](./analysis/analysis-power.Rmd), and html output
+of the former [analysis-power.html](./analysis/analysis-power.html)
+contain the power analysis, using the artificial data created in
+[data-simulation.R](./analysis/data-simulation.R) and (simplified)
+models specified in the analysis pipeline. The power analysis was run
+with 1000 simulations; users might want to run with fewer simulations
+(n = 100 and/or set a different number of cores) for efficiency. We
 acknowledge the use of the University of Oxford Advanced Research
 Computing (ARC) facility in carrying out the power analysis
 (http://dx.doi.org/10.5281/zenodo.22558).
