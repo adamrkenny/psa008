@@ -92,7 +92,7 @@ df_rq1_att %>%
 model_rq1_att <-
     
     lmerTest::lmer(
-                  amount ~ group + (1 | id) + (1 | country)
+                  amount ~ group + (1 | id) + (group | country)
                 , contrasts = list(group = "contr.sum")
                 , data = df_rq1_att)
 
