@@ -14,7 +14,8 @@ packages <- c(
   "lme4", # random effects models
   "lmerTest", # random effects models
   "metafor", # for meta-analysis
-  "patchwork" # plots
+  "patchwork", # plots
+  "PupillometryR" # for geom_flat_violing
 )
 ## create list of packages that have not been installed
 new_packages <-
@@ -252,6 +253,7 @@ plot_bias
 df_rq1_att <-
     
     df2 %>%
+    filter(grouptype=="att_min") %>% # select just the row encoding MG attitude
     select(id, country, att_min_in, att_min_out) %>%
     pivot_longer(cols = c("att_min_in", "att_min_out"),
                  names_to = "group",
@@ -683,10 +685,12 @@ summary(model_rq2_permeability)
 ## 3 models for permeability (hypothesis H2.1)
 
 ## family ties
+# is significant w/out random slope
+
 model_rq2_family_ties <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + family_ties + (family_ties | country)
+                  min_bias ~ 1 + family_tie_sum + (family_tie_sum | country)
                 , data = df_rq2_att)
 
 ## individualism--collectivism
@@ -697,6 +701,7 @@ model_rq2_permeability <-
                 , data = df_rq2_att)
 
 ## model relational mobility
+## YD: variable missing, does not run
 model_rq2_relational_mobility <-
     
     lmerTest::lmer(
@@ -706,22 +711,25 @@ model_rq2_relational_mobility <-
 ## 2 models for trust (hypothesis H2.2)
 
 ## model with trust (strangers)
+# is significant w/out random slope
 model_rq2_trust_strangers <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + trust_strangers + (trust_strangers | country)
+                  min_bias ~ 1 + trust_in_out + (trust_in_out | country)
                 , data = df_rq2_att)
 
 ## model with trust (institutional)
+# is significant w/out random slope
 model_rq2_trust_institution <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + trust_institution + (trust_institution | country)
+                  min_bias ~ 1 + trust_institution + (1 | country)
                 , data = df_rq2_att)
 
 ## 1 model for self-esteem (hypothesis H2.3)
 
 ## model with esteem
+# is significant w/out random slope
 model_rq2_esteem <-
     
     lmerTest::lmer(
@@ -731,6 +739,8 @@ model_rq2_esteem <-
 ## 2 models for belief and status (hypothesis H2.4)
 
 ## model with belief
+## YD: variable missing, does not run
+
 model_rq2_belief <-
     
     lmerTest::lmer(
@@ -738,6 +748,8 @@ model_rq2_belief <-
                 , data = df_rq2_att)
 
 ## model with status
+## YD: variable missing, does not run
+
 model_rq2_status <-
     
     lmerTest::lmer(
@@ -778,8 +790,9 @@ model_real_world <-
                        (att_min_bias + group_type | country),
                    data = df_rq3_att)
 
-## summary
+## summary and summary plot
 summary(model_real_world)
+sjPlot::plot_model(model_real_world,type='int')
 
 ## plot rq3 att
 model_coefs <- 
