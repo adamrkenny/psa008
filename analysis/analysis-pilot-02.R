@@ -735,6 +735,12 @@ model_rq2_esteem <-
     lmerTest::lmer(
                   min_bias ~ 1 + self_esteem + (self_esteem | country)
                 , data = df_rq2_att)
+summary(model_rq2_esteem)
+
+cor.test(df_rq2_att$self_esteem,df_rq2_att$min_bias) # simple correlation is .11
+cor.test(df_rq2_dg_first$self_esteem,df_rq2_dg_first$min_bias) # ns, r = -.04
+cor.test(df_rq2_dg_third$self_esteem,df_rq2_dg_third$min_bias) # r = .08
+
 
 ## 2 models for belief and status (hypothesis H2.4)
 
@@ -793,6 +799,12 @@ model_real_world <-
 ## summary and summary plot
 summary(model_real_world)
 sjPlot::plot_model(model_real_world,type='int')
+
+# look at simple correlations between MGE and real-world for each type of real-world bias
+nat <- filter(df_rq3_att,group_type=='nat')
+cor.test(nat$att_min_bias,nat$att_real_bias) #  r = .26
+fam <- filter(df_rq3_att,group_type=='fam')
+cor.test(fam$att_min_bias,fam$att_real_bias). # r = .13
 
 ## plot rq3 att
 model_coefs <- 
