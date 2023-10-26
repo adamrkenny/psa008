@@ -1,13 +1,11 @@
 header,notes
-n_ids,number of participants per country in simulated dataframe
-n_countries,number of countries in simulated dataframe
-bias_es,effect size used for outcome (i.e. intergroup bias)
-beta,beta coefficient for fixed effect
-random,value of random variance
-trials,total number of simulations
 successes,number of simulations for which an effect was detected
+trials,total number of simulations
 mean,power to reject the null hypothesis of zero trend in predictor(s)
 lower,lower bound of 95 percent confidence interval
 upper,upper bound of 95 percent confidence interval
-powered,"given the parameters, is it sufficiently powered at 0.95?"
-class,"which research question (rq) the power analysis relates to (rq1, rq2, rq3)"
+n_ids,number of participants per country in simulated dataframe
+n_countries,number of countries in simulated dataframe
+beta_X,"beta coefficient for fixed effect, where X = group (RQ1); = self-esteem (RQ2); = MGE (RQ3)"
+random_country,value of random variance for country
+class,"which research question the power analysis relates to (RQ1, 2, or 3)"

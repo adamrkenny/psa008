@@ -1,0 +1,41 @@
+R version 4.2.2 (2022-10-31)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: CentOS Linux 8 (Core)
+
+Matrix products: default
+BLAS/LAPACK: /apps/system/easybuild/software/FlexiBLAS/3.2.0-GCC-11.3.0/lib64/libflexiblas.so.3.2
+
+locale:
+ [1] LC_CTYPE=en_GB.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_GB.UTF-8        LC_COLLATE=en_GB.UTF-8    
+ [5] LC_MONETARY=en_GB.UTF-8    LC_MESSAGES=en_GB.UTF-8   
+ [7] LC_PAPER=en_GB.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_GB.UTF-8 LC_IDENTIFICATION=C       
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] simr_1.0.6     lmerTest_3.1-3 lme4_1.1-32    Matrix_1.5-3   furrr_0.3.1   
+ [6] future_1.32.0  forcats_1.0.0  stringr_1.5.0  tibble_3.2.1   purrr_1.0.1   
+[11] readr_2.1.4    tidyr_1.3.0    dplyr_1.1.1   
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.2.0    listenv_0.9.0       splines_4.2.2      
+ [4] lattice_0.20-45     carData_3.0-5       colorspace_2.1-0   
+ [7] vctrs_0.6.1         generics_0.1.3      mgcv_1.8-42        
+[10] utf8_1.2.3          rlang_1.1.0         pillar_1.9.0       
+[13] nloptr_2.0.3        glue_1.6.2          plyr_1.8.8         
+[16] binom_1.1-1.1       lifecycle_1.0.3     munsell_0.5.0      
+[19] gtable_0.3.3        codetools_0.2-19    tzdb_0.3.0         
+[22] RLRsim_3.1-8        pbkrtest_0.5.2      parallel_4.2.2     
+[25] fansi_1.0.4         broom_1.0.4         Rcpp_1.0.10        
+[28] scales_1.2.1        backports_1.4.1     plotrix_3.8-2      
+[31] abind_1.4-5         parallelly_1.35.0   ggplot2_3.4.1      
+[34] hms_1.1.3           digest_0.6.31       stringi_1.7.12     
+[37] numDeriv_2016.8-1.1 grid_4.2.2          cli_3.6.1          
+[40] tools_4.2.2         magrittr_2.0.3      car_3.1-2          
+[43] pkgconfig_2.0.3     MASS_7.3-58.3       minqa_1.2.5        
+[46] iterators_1.0.14    R6_2.5.1            globals_0.16.2     
+[49] boot_1.3-28.1       nlme_3.1-162        compiler_4.2.2     
