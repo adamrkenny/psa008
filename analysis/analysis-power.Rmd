@@ -14,11 +14,13 @@ output:
 
 # README {-}
 
-This document describes the power analysis for PSA 008 Minimal Groups. It is split into two parts. 
+This document describes the power analysis for PSA 008 Minimal Groups. It is split into three parts. 
 
 Section 1 details the general approach, how various parameters were derived, and how the dataset was simulated.
 
 Section 2 shows the code used for the power analysis output reported in the manuscript, as well as reporting the output of the power analysis. Specifically, the power analysis using the mixed-effects modelling approach. The code iterates over different combinations of number of participants, number of countries, effect sizes, and random intercepts. By default, the number of simulations is set to 10 so that this document can be compiled. To reproduce the power analysis results reported in the manuscript, this should be changed to 1,000. This is time and resource intensive, with each simulation taking approximately 5 hours to complete when using 1,000 simulations. We used the University of Oxford Advanced Research Computing (ARC) facility (http://dx.doi.org/10.5281/zenodo.22558). This is why users should troubleshoot using a smaller number of simulations.
+
+Section 3 provides the power analysis for the meta-analytic approach to RQ1.
 
 # Packages {-}
 
@@ -59,15 +61,15 @@ As outlined in the analysis plan in the main text, we have three main research q
 
 For all research questions, the aim of the power analysis is to calculate the number of participants per country, given three parameters: significance level, power, and effect size/beta.
 
-* We set the significance level to $alpha = .05/3 = .017$. This is because there are three outcomes tested within each research question. In all cases, the outcome is a measure of bias, which is the difference between the in-group and the out-group in either first-party allocation, third-party allocation, or attitudes.
+* We set the significance level to $alpha = .05/3 = .017$. This is because there are three outcomes tested within each research question. In RQ1 the outcome is an attitude or allocation; in RQ2 and RQ3 the outcome is a measure of bias (the difference between the in-group and the out-group in either first-party allocation, third-party allocation, or attitudes, for either minimal or real-world groups).
 
 * Given our frequentist analysis plans, the a priori power is set to $beta = 0.95$ or higher.
 
-* For RQ1, the outcome is the decision in the game or the bias in attitudes, and we are interested in powering for the effect of minimal group (in-group vs out-group) on this decision. We looked to the literature for an indication of effect size for the minimal group effect. We derived three values. The smallest value of $0.19$ is based on @Balliet-et-al_2014, a meta-analysis of intergroup discrimination in behavioural economic games. This corresponds with the average effect size in games lacking mutual interdependence, like the allocation games we plan to run. It is also approximately half the overall effect size of games involving experimentally created (i.e. minimal) groups reported in @Balliet-et-al_2014 ($d = 0.35; 0.27-0.42)$, as well as the overall effect size of $d = 0.37 (0.28-0.45; n = 150)$ in games involving "artificial" (i.e. minimal) groups reported in @Lane_2016. The middle value of $0.27$ corresponds to the lower confidence interval for the overall effect size reported in @Balliet-et-al_2014, and the largest value of $0.35$ corresponds to the overall effect size.
+* For RQ1, the outcome is the decision in the game or the evaluative attitude, and we are interested in powering for the effect of minimal group (a predictor coding for in-group vs out-group) on this decision. We looked to the literature for an indication of effect size for the minimal group effect. We derived three values. The smallest value of $0.19$ is based on @Balliet-et-al_2014, a meta-analysis of intergroup discrimination in behavioural economic games. This corresponds with the average effect size in games lacking mutual interdependence, like the allocation games we plan to run. It is also approximately half the overall effect size of games involving experimentally created (i.e. minimal) groups reported in @Balliet-et-al_2014 ($d = 0.35; 0.27-0.42)$, as well as the overall effect size of $d = 0.37 (0.28-0.45; n = 150)$ in games involving "artificial" (i.e. minimal) groups reported in @Lane_2016. The middle value of $0.27$ corresponds to the lower confidence interval for the overall effect size reported in @Balliet-et-al_2014, and the largest value of $0.35$ corresponds to the overall effect size.
 
-* For RQ2, the outcome is bias (difference between in-group and out-group) in the decision, and we are interested in powering for the effect of one of our moderators (e.g. self-esteem, trust) group (in-group vs out-group) on this decision. We looked to the literature, and used two values. One value was $0.11$, which was derived from our pilot 02 data, specifically the correlation between self-esteem and minimal group effect. The other value was $0.41$, which was estimated from the effect of State Trust on the rate of cooperation using the meta-regression tool on the Cooperation Databank (https://app.cooperationdatabank.org/). The meta-regression (restricted ML estimator) reported a beta of 0.419 when conducted on 2022-11-22, which was composed of 11 effects and a total of 2,036 participants.
+* For RQ2, the outcome is bias (difference between in-group and out-group) in the decision, and we are interested in powering for the effect of one of our moderators (e.g. self-esteem, trust) group (in-group vs out-group) on this decision. We looked to the literature, and used two values. One value was $0.11$, which was derived from our pilot 02 data, specifically the correlation between self-esteem and minimal group effect. The other value was $0.42$, which was estimated from the effect of State Trust on the rate of cooperation using the meta-regression tool on the Cooperation Databank (https://app.cooperationdatabank.org/). The meta-regression (restricted ML estimator) reported a beta of 0.419 when conducted on 2022-11-22, which was composed of 11 effects and a total of 2,036 participants.
 
-* For RQ3, the outcome is bias with real-world (i.e. national and family) groups. We derived an effect size based on literature reporting studies with national groups, as this is more common than with family groups. Effects sizes relevant to national groups in economic tasks are a meta-analysis and a recent cross-cultural study. @Lane_2016 also eports an overall effect size of "national" groups $d = 0.16 (0.04–0.29; n = 52)$, and @Romano-et-al_2021 conducted a study across 42 nations finding $d = 0.22 (0.19-0.25)$ (this compares in-group with out-group plus strangers; from supplementary figures, it appears that the difference between in-group and out-group is less than in-group and stranger, so the overall effect size for in-group vs. out-group is likely less than $0.22$). We are not aware of an overall effect size of family from a meta-analysis or large scale study to report an effect size. Thus, we set the effect size to the smaller value of 0.16, which is the same used for RQ1 and RQ2.
+* For RQ3, the outcome is bias with real-world (i.e. national and family) groups. We derived an effect size based on literature reporting studies with national groups, as this is more common than with family groups. Effects sizes relevant to national groups in economic tasks are a meta-analysis and a recent cross-cultural study. @Lane_2016 also eports an overall effect size of "national" groups $d = 0.16 (0.04–0.29; n = 52)$, and @Romano-et-al_2021 conducted a study across 42 nations finding $d = 0.22 (0.19-0.25)$ (this compares in-group with out-group plus strangers; from supplementary figures, it appears that the difference between in-group and out-group is less than in-group and stranger, so the overall effect size for in-group vs. out-group is likely less than $0.22$). We are not aware of an overall effect size of family from a meta-analysis or large scale study to report an effect size. Thus, we set the effect size to the smaller value of 0.16, which is the same used for RQ1 and RQ2. Most importantly, the primary effect of interesting in RQ3 is the effect of MGE on real-world bias. Because we are unaware of past research upon which to base an estimate of this effect we appraoched it via a sensitivty analysis, setting an expected value based on our Pilot 2 data, from which we observed an effect of .13. We thus estimate values from .05 to .20 in steps of .05.
 
 For all RQs, we used the "simr" package [@Green-McLeod_2016], which allows for the a simplified version of the planned statistical model to be specified and the power calculated for a varying number of participants per country, number of countries, and country intercept variances. For all these calculations, we used simulated data, described below.
  
@@ -218,7 +220,7 @@ n_sim <- 10 # to troubleshoot
 
 We conduct a power analysis for each research question (RQ), using a version of the pre-specified mixed-models we will conduct as part of the planned analyses. The specification was trimmed. Only the random intercept for country was included. No random slopes were included because of in the absence of reliable estimates from prior literature and computational issues. 
 
-For each fixed effect we specify the beta coefficients, for each random effect the variance, and finally the error variance (\ie sigma). Coefficients for the effects of interest (group for RQ1, a single moderator for RQ2, the relationship between the minimal group effect and real group bias in RQ3) were based on expectations from the literature. The variance was set to multiple values. The error variance is set to 1 in all models.
+For each fixed effect we specify the beta coefficients, for each random effect the variance, and finally the error variance (\ie sigma). Coefficients for the effects of interest (group for RQ1, a single moderator for RQ2, the relationship between the minimal group effect and real group bias in RQ3) were based on expectations from the literature or from our Pilot 2 data. The variance was set to multiple values. The error variance is set to 1 in all models.
 
 We display the code that generates the output. Warning, this code below is computational intensive. It is advised that users run the code with a smaller number of iterations, or a subset of parameters. We print the output in a table for easy viewing. These pull in the `.csv` files saved in the repository, which contain the output from the the full run of 1,000 simulations.
 
@@ -233,7 +235,7 @@ read_csv("pwr-rqs-codebook.csv") %>%
 
 ## Research question 1
 
-The output for RQ1 is generated by the following iterative code. We initially examined power for participant samples of 100 to 400 in steps of 50 but given that power asymptoted at lower sample sisze we here present results for samples of 100 to 250 ins teps of 50.
+The output for RQ1 is generated by the following iterative code. We initially examined power for participant samples of 100 to 400 in steps of 50 but given that power asymptoted at lower sample sizes we here present results for samples of 100 to 250 in steps of 50.
 
 ```{r, rq1-iter, eval = FALSE}
 ## function to simulate data and run power analysis
@@ -739,9 +741,9 @@ simulation_swarm_rq3 <- function(n_ids, n_countries, beta, random_country) {
     )
     
     ## construct model
-    ## in final analyses, we will include (group | country):
-    ## decision ~ group + (1 | id) + (group | country)
-    ## but we use a simplier specification for the power analysis
+    ## in final analyses, we will include random slopes:
+    ## decision ~ group_type + (1 | id) + (MGE + group_type | country)
+    ## but we use a simpler specification for the power analysis
     model_rq3 <- 
         
         makeLmer(
@@ -785,7 +787,7 @@ parameter_space_rq3 <-
     crossing(
         n_ids = c(100, 150, 200, 250), # number of participants per country
         n_countries = c(20, 30, 40, 50, 60), # number of countries
-        beta = c(0.10, 0.25, 0.40), # beta for "MGE" 
+        beta = c(0.5, 0.10, 0.15, 0.20), # beta for "MGE" 
         random_country = c(0.3, 0.9, 1.5) # for "country" random intercept
     )
 
@@ -920,7 +922,7 @@ gather_tbls <- grep("tbl", names(.GlobalEnv), value=TRUE)
 tbls_list <- do.call("list", mget(gather_tbls))
 
 ## create plot
-## YD: does not run, column names issue; AK: still?
+
 plot_power <-
 
     bind_rows(tbls_list) %>%
