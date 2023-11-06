@@ -9,6 +9,7 @@
 # load required packages
 library(tidyverse)
 library(qualtRics)
+library(effsize)
 
 # read data; may need to adjust file path
 raw <- read_survey('../data/data-pilot-01-processed.csv')
@@ -73,12 +74,14 @@ mean(reduced$ingroupAdv) # average ingroup preference effect, in scale units
 sd(reduced$ingroupAdv) # sd of ingroup preference effect
 mean(reduced$ingroupAdv) / sd(reduced$ingroupAdv)  # standardized effect size
 t.test(reduced$ingroupAdv)
+cohen.d(reduced$ingroupAdv,f=NA)
 
 ## Resource task
 mean(reduced$IGbenAdv)  # average rating advantage of ingroup-favoring distributions
 sd(reduced$IGbenAdv)  # sd of those advantages 
 mean(reduced$IGbenAdv)/sd(reduced$IGbenAdv)  # standardized effect size
 t.test(reduced$IGbenAdv)
+cohen.d(reduced$IGbenAdv,f=NA)
 
 
 # reliability of attitude items
