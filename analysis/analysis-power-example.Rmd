@@ -121,14 +121,13 @@ simulation_swarm_rq1 <- function(n_ids = 200, n_countries = 40, beta = 0.19, ran
         random_intercept # for country
       , random_slope
       , .40 # for id, estimated from pilot 02 data (= 0.389)
+      , 0.1 # for corr matrix
     )
     
     ## construct model
     ## in final analyses, we will include (group | country):
     ## decision ~ group + (1 | id) + (group | country)
     ## but we use a simplier specification for the power analysis
-    
-    ## YD: this makeLmer gives a theta size mismactch, 3 != 4, indicating that we needed to pass one more value for VarCorr
     
     model_rq1 <-
         makeLmer(
@@ -300,12 +299,12 @@ simulation_swarm_rq3 <- function(n_ids = 200, n_countries = 40, beta = 0.1, rand
     ## random intercepts
     random <- list(
         random_intercept # for country
+      , random_slope
       , .40 # for id, estimated from pilot 02 data (= 0.389)
+      , 0.1 # for corr matrix
     )
     
     ## construct model
-    ## YD: this makeLmer gives a theta size mismactch, 3 != 4, indicating that we needed to pass one more value for VarCorr
-
     model_rq3 <- 
         
         makeLmer(
