@@ -51,7 +51,7 @@ n_sim <- 10 # to troubleshoot
 ## n_sim <- 1000 # actual run
 ```
 
-### Research question 1
+# Research question 1
 
 This is an example of estimating power for RQ1 for a given dataset using a single set of parameters, with varying random slopes.
 
@@ -181,7 +181,7 @@ pwr_rq1 <-
 print(pwr_rq1)
 ```
 
-### Research question 3
+# Research question 3
 
 This is an example of estimating power for RQ3 for a given dataset using a single set of parameters, with varying random slopes.
 
@@ -346,29 +346,7 @@ simulation_swarm_rq3 <- function(n_ids = 200, n_countries = 40, beta = 0.1, rand
 parameter_space_rq3 <-
 
     crossing(
-        random_slope = c(0.1, 0.5, 1.0) # for "self-esteem in country" random slope
-    )
-
-## run power analysis across all parameters
-pwr_rq3 <-
-     
-    future_pmap_dfr(parameter_space_rq3,
-                    simulation_swarm_rq3,
-                    .options = furrr_options(seed = TRUE),
-                    .progress = TRUE
-                    )
-
-## print output
-print(pwr_rq3)
-
-## create tibble with all combinations of parameters
-parameter_space_rq3 <-
-
-    crossing(
-        n_ids = c(100, 150, 200, 250), # number of participants per country
-        n_countries = c(20, 30, 40, 50, 60), # number of countries
-        beta = c(0.10, 0.25, 0.40), # beta for "MGE" 
-        random_country = c(0.3, 0.9, 1.5) # for "country" random intercept
+        random_slope = c(0.1, 0.5, 1.0) # for "MGE in country" random slope
     )
 
 ## run power analysis across all parameters
