@@ -15,7 +15,8 @@ packages <- c(
   "lmerTest", # random effects models
   "metafor", # for meta-analysis
   "patchwork", # plots
-  "PupillometryR" # for geom_flat_violing
+  "PupillometryR", # for geom_flat_violing
+  "effsize" # for CIs of effect sizes
 )
 ## create list of packages that have not been installed
 new_packages <-
@@ -85,22 +86,34 @@ df_att_nat_bias
 df_dg_nat_bias_first
 df_dg_nat_bias_third
 
-## t-tests for p values reported in main text
+## t-tests for p values and 95% CIs for d values reported in main text
 
 ## minimal group
 t.test(df$att_min_bias)
 t.test(df$dg_min_bias_first)
 t.test(df$dg_min_bias_third)
 
+cohen.d(df$att_min_bias,f=NA)
+cohen.d(df$dg_min_bias_first,f=NA)
+cohen.d(df$dg_min_bias_third,f=NA)
+
 ## family group
 t.test(df$att_fam_bias)
 t.test(df$dg_fam_bias_first)
 t.test(df$dg_fam_bias_third)
 
+cohen.d(df$att_fam_bias,f=NA)
+cohen.d(df$dg_fam_bias_first,f=NA)
+cohen.d(df$dg_fam_bias_third,f=NA)
+
 ## national group
 t.test(df$att_nat_bias)
 t.test(df$dg_nat_bias_first)
 t.test(df$dg_nat_bias_third)
+
+cohen.d(df$att_nat_bias,f=NA)
+cohen.d(df$dg_nat_bias_first,f=NA)
+cohen.d(df$dg_nat_bias_third,f=NA)
 
 ## bias plot (Figure 1 in manuscript)
 
@@ -719,23 +732,25 @@ model_rq2_trust_strangers <-
                 , data = df_rq2_att)
 
 ## model with trust (institutional)
-# is significant w/out random slope
 model_rq2_trust_institution <-
     
     lmerTest::lmer(
                   min_bias ~ 1 + trust_institution + (1 | country)
                 , data = df_rq2_att)
 
+summary(model_rq2_trust_institution)
+drop1(model_rq2_trust_institution,test="Chisq")
+
 ## 1 model for self-esteem (hypothesis H2.3)
 
 ## model with esteem
-# is significant w/out random slope
 model_rq2_esteem <-
     
     lmerTest::lmer(
-                  min_bias ~ 1 + self_esteem + (self_esteem | country)
+                  min_bias ~ 1 + self_esteem + (1 | country)
                 , data = df_rq2_att)
 summary(model_rq2_esteem)
+drop1(model_rq2_esteem,test="Chisq")
 
 cor.test(df_rq2_att$self_esteem,df_rq2_att$min_bias) # simple correlation is .11
 cor.test(df_rq2_dg_first$self_esteem,df_rq2_dg_first$min_bias) # ns, r = -.04
@@ -745,7 +760,6 @@ cor.test(df_rq2_dg_third$self_esteem,df_rq2_dg_third$min_bias) # r = .08
 ## 2 models for belief and status (hypothesis H2.4)
 
 ## model with belief
-## YD: variable missing, does not run
 
 model_rq2_belief <-
     
@@ -799,6 +813,17 @@ model_real_world <-
 ## summary and summary plot
 summary(model_real_world)
 sjPlot::plot_model(model_real_world,type='int')
+
+#collapsing across group type
+model_real_world_avg <- 
+  
+  lmerTest::lmer(att_real_bias ~ att_min_bias + group_type + 
+                   (1 | id)  + 
+                   (1 | country),
+                 data = df_rq3_att)
+
+summary(model_real_world_avg)
+drop1(model_real_world_avg,test='Chisq')
 
 # look at simple correlations between MGE and real-world for each type of real-world bias
 nat <- filter(df_rq3_att,group_type=='nat')

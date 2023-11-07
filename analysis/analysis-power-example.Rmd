@@ -100,12 +100,12 @@ simulation_swarm_rq1 <- function(n_ids = 200, n_countries = 40, beta = 0.19, ran
                      names_to = "group",
                      values_to = "decision") %>%
         mutate(group = if_else(group == "min_in", "in", "out")) %>%
-        select(id, country, group, decision)
+        dplyr::select(id, country, group, decision)
     
     ## extract number of countries and participants per country
     ## to include in summary output
-    n_country <- pull(count(unique(select(df, country))))
-    n_id <- pull(count(unique(select(df, id))))/n_country
+    n_country <- pull(count(unique(dplyr::select(df, country))))
+    n_id <- pull(count(unique(dplyr::select(df, id))))/n_country
 
     ## sigma in models
     residual_sd <- 1
@@ -127,6 +127,9 @@ simulation_swarm_rq1 <- function(n_ids = 200, n_countries = 40, beta = 0.19, ran
     ## in final analyses, we will include (group | country):
     ## decision ~ group + (1 | id) + (group | country)
     ## but we use a simplier specification for the power analysis
+    
+    ## YD: this makeLmer gives a theta size mismactch, 3 != 4, indicating that we needed to pass one more value for VarCorr
+    
     model_rq1 <-
         makeLmer(
             decision ~ group + (group | country) + (1 | id),
@@ -276,12 +279,12 @@ simulation_swarm_rq3 <- function(n_ids = 200, n_countries = 40, beta = 0.1, rand
                          names_to = "group_type", values_to = "real_bias") %>%
             rename(MGE = min_bias) %>%
             separate(group_type, into = c("group_type", "bias")) %>%
-            select(id, country, MGE, group_type, real_bias)
+            dplyr::select(id, country, MGE, group_type, real_bias)
         
     ## extract number of countries and participants per country
     ## required for producing output
-    n_country <- pull(count(unique(select(df, country))))
-    n_id <- pull(count(unique(select(df, id))))/n_country
+    n_country <- pull(count(unique(dplyr::select(df, country))))
+    n_id <- pull(count(unique(dplyr::select(df, id))))/n_country
   
     ## sigma in models
     residual_sd <- 1
@@ -301,6 +304,8 @@ simulation_swarm_rq3 <- function(n_ids = 200, n_countries = 40, beta = 0.1, rand
     )
     
     ## construct model
+    ## YD: this makeLmer gives a theta size mismactch, 3 != 4, indicating that we needed to pass one more value for VarCorr
+
     model_rq3 <- 
         
         makeLmer(
@@ -346,16 +351,16 @@ parameter_space_rq3 <-
     )
 
 ## run power analysis across all parameters
-pwr_rq2 <-
+pwr_rq3 <-
      
-    future_pmap_dfr(parameter_space_rq2,
-                    simulation_swarm_rq2,
+    future_pmap_dfr(parameter_space_rq3,
+                    simulation_swarm_rq3,
                     .options = furrr_options(seed = TRUE),
                     .progress = TRUE
                     )
 
 ## print output
-print(pwr_rq2)
+print(pwr_rq3)
 
 ## create tibble with all combinations of parameters
 parameter_space_rq3 <-
