@@ -649,7 +649,7 @@ parameter_space_rq3 <-
     crossing(
         n_ids = c(100, 150, 200, 250), # number of participants per country
         n_countries = c(20, 30, 40, 50, 60), # number of countries
-        beta = c(0.05, 0.10, 0.15, 0.20), # beta for "MGE" 
+        beta = c(0.05, 0.10, 0.15), # beta for "MGE" 
         random_country = c(0.3, 0.9, 1.5) # for "country" random intercept
     )
 
