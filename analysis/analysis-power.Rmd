@@ -674,8 +674,10 @@ Here is the output for RQ3. In sum, we are sufficiently powered across all param
 
 ```{r, rq3-1000-results, echo = FALSE, message = FALSE,  results = "asis"}
 ## create plot
-plot_power_rq3 <- 
+plot_power_rq3 <-
+  
   read_csv("pwr-rq3.csv") %>%
+  filter(beta_MGE != 0.2) %>% # removed as uninformative
   mutate(n_countries = as.factor(n_countries)) %>%
   ggplot() +
   aes(x = n_ids, y = mean, group = n_countries, colour = n_countries) +
@@ -683,7 +685,6 @@ plot_power_rq3 <-
   geom_line(alpha = 0.5, size = 1.5) +
   geom_hline(yintercept = 0.95, linetype = 2) +
   ylim(0.3, 1.00) +
-  # scale_y_continuous(expand=expansion(multc(0.8,0.8))) +
   facet_wrap(beta_MGE ~ random_country,
              scales = "free",
              labeller = labeller(random_country = as_labeller(
@@ -701,7 +702,6 @@ plot_power_rq3 <-
     scale_colour_brewer(palette = "Dark2",
                         name = "number of\ncountries",
                         na.translate = FALSE) +
-    # scale_y_continuous(limits = c(ylimlow, 1.00)) +
     labs(x = "sample size (total n)",
          y = "power (beta)") +
     guides(colour = guide_legend(reverse = TRUE)) +
@@ -713,6 +713,7 @@ plot_power_rq3 <-
           strip.text.x = element_text(margin = margin(unit(1, "lines"))),
           strip.background = element_blank(),
           strip.placement = "outside")
+
 ## print plot
 plot_power_rq3
 
