@@ -12,7 +12,7 @@ output:
 
 # README {-}
 
-This file presents the code for the power analysis, for each research question. The code uses one of the simulated datasets, namely one with 200 participants across 40 countries. We use this as an example as it represents a number of participants and countries we reasonably assume we can recruit from. Users are welcome to change the dataset (e.g. to 100 participants across 40 countries), as well as any of the parameters. In this section, we also include random slopes for fixed effects, to demonstrate how the inferences do not change significantly with their inclusion.
+This file presents the code for the power analysis, for research question 1. The code uses one of the simulated datasets, namely one with 200 participants across 40 countries. We use this as an example as it represents a number of participants and countries we reasonably assume we can recruit from. Users are welcome to change the dataset (e.g. to 100 participants across 40 countries), as well as any of the parameters. In this section, we also include random slopes for fixed effects, to demonstrate how the inferences do not change significantly with their inclusion.
 
 # Packages {-}
 
@@ -119,16 +119,13 @@ simulation_swarm_rq1 <- function(n_ids = 200, n_countries = 40, beta = 0.19, ran
     ## random intercepts
     random <- list(
         random_intercept # for country
-      , random_slope
       , .40 # for id, estimated from pilot 02 data (= 0.389)
-      , 0.1 # for corr matrix
+      , random_slope
+      , 0 
     )
     
     ## construct model
     ## in final analyses, we will include (group | country):
-    ## decision ~ group + (1 | id) + (group | country)
-    ## but we use a simplier specification for the power analysis
-    
     model_rq1 <-
         makeLmer(
             decision ~ group + (group | country) + (1 | id),
@@ -165,7 +162,7 @@ simulation_swarm_rq1 <- function(n_ids = 200, n_countries = 40, beta = 0.19, ran
 parameter_space_rq1 <-
 
     crossing(
-        random_slope = c(0.1, 0.5, 1.0) # for "group in country" random slope
+        random_slope = c(-0.1, 0, 0.1, 0.5, 1.0) # for "group in country" random slope
     )
 
 ## run power analysis across all parameters
@@ -179,185 +176,41 @@ pwr_rq1 <-
 
 ## print output
 print(pwr_rq1)
+
+## save in one csv for later use
+pwr_rq1 %>%
+    write.csv(file = paste0("./pwr-rq1-random.csv"))
 ```
 
-# Research question 3
+Here is the output for RQ1.
 
-This is an example of estimating power for RQ3 for a given dataset using a single set of parameters, with varying random slopes.
-
-```{r, rq3-iter, eval = FALSE}
-## simulate data
-simulation_swarm_rq3 <- function(n_ids = 200, n_countries = 40, beta = 0.1, random_intercept = 1.5, random_slope) {
-    
-    ## and that vary in number of participants per country
-       
-        ## create subject ids
-        ids <- (1:n_ids) # start with n subjects per country
-        
-        ## create list of country names
-        country_names <-
-            
-            letters_beyond_single_digits(n_countries) %>%
-            tibble() %>%
-            pull()
-        
-        ## create dataframe
-        fake_data <-
-            
-            expand.grid(id = ids, country = country_names) %>%
-            tibble() %>%
-            mutate(id = c(1:nrow(.)))
-        
-        ## number of participants
-        n_total <- nrow(fake_data)
-        
-        ## RQ1 variables
-        
-        ## create one of the minimal group dependent measures, based on the
-        ## average attitude towards in-group and towards out-group
-        
-        ## mean and sd values are taken from pilot 02
-        
-        ## add outcomes for RQ1
-        fake_data <-
-            
-            fake_data %>%
-            mutate(min_in = 
-                       round(
-                           rtruncnorm(n_total, 
-                                      mean = 6.74, sd = 1, min = 0, max = 20), 
-                           0),
-                   min_out = 
-                       round(
-                           rtruncnorm(n_total, 
-                                      mean = 5.83, sd = 1, min = 0, max = 20), 
-                           0)
-                   ) %>%
-            mutate(min_bias = min_in - min_out)
-
-        ## RQ3 variables
-
-        ## mean and sd values are taken from pilot 02
-        
-        ## add real-world measures
-        fake_data <-
-            
-            fake_data %>%
-            ## nation
-            mutate(
-                nat_in = 
-                    round(
-                        rtruncnorm(n_total, 
-                                   mean = 6.29, sd = 1, min = 0, max = 20), 
-                        0),
-                nat_out = 
-                    round(
-                        rtruncnorm(n_total, 
-                                   mean = 6.26, sd = 1, min = 0, max = 20), 
-                        0)) %>%
-            mutate(nat_bias = nat_in - nat_out) %>%
-            ## family        
-            mutate(
-                fam_in = 
-                    round(
-                        rtruncnorm(n_total, 
-                                   mean = 3, sd = 1, min = 0, max = 10), 
-                        0),
-                fam_out = 
-                    round(
-                        rtruncnorm(n_total, 
-                                   mean = 1, sd = 1, min = 0, max = 10), 
-                        0)) %>%
-            mutate(fam_bias = fam_in - fam_out)
-    
-        ## dataframe
-        df <-
-            
-            fake_data %>%
-            pivot_longer(cols = c("nat_bias", "fam_bias"),
-                         names_to = "group_type", values_to = "real_bias") %>%
-            rename(MGE = min_bias) %>%
-            separate(group_type, into = c("group_type", "bias")) %>%
-            dplyr::select(id, country, MGE, group_type, real_bias)
-        
-    ## extract number of countries and participants per country
-    ## required for producing output
-    n_country <- pull(count(unique(dplyr::select(df, country))))
-    n_id <- pull(count(unique(dplyr::select(df, id))))/n_country
-  
-    ## sigma in models
-    residual_sd <- 1
-
-    ## fixed intercept 
-    fixed <- c(
-        0.1 # intercept from Romano
-      , beta # beta for MGE
-      , beta # beta for group_type
-      , beta # beta for interaction between MGE and group_type
+```{r, rq1-1000-results, echo = FALSE, message = FALSE,  results = "asis"}
+## create plot
+plot_power_rq1_random <-
+  read_csv("pwr-rq1-random.csv") %>%  
+  mutate(n_ids = as.factor(n_ids)) %>%
+  ggplot() +
+  aes(x = random_slope, y = mean, group = n_ids, colour = n_ids) +
+  geom_point(size = 3) +
+  geom_line(alpha = 0.5, size = 1.5) +
+  geom_hline(yintercept = 0.95, linetype = 2) +
+  ylim(0.00, 1.00) +
+  scale_x_continuous(breaks=c(-0.1, 0, 0.1, 0.5, 1.0)) +
+  scale_colour_brewer(palette = "Dark2",
+                        name = "number of\nparticipants",
+                        na.translate = FALSE) +
+    labs(x = "random slope of group within country",
+         y = "power (beta)") +
+    guides(colour = guide_legend(reverse = TRUE)) +
+    labs(title = "Power analysis RQ1 with random slopes") +
+    theme_bw(
+      ## base_size = 30 ## for legibility of printed plot, comment out size
     )
-    
-    ## random intercepts
-    random <- list(
-        random_intercept # for country
-      , random_slope
-      , .40 # for id, estimated from pilot 02 data (= 0.389)
-      , 0.1 # for corr matrix
-    )
-    
-    ## construct model
-    model_rq3 <- 
-        
-        makeLmer(
-            real_bias ~ MGE * group_type + (MGE | country) + (1 | id), 
-            fixef = fixed, 
-            VarCorr = random, 
-            sigma = residual_sd, 
-            data = df                 
-        )
-    
-    ## check power
-    sim_rq3 <- 
-      
-      powerSim(
-        model_rq3,
-        test = fixed("MGE", method = "z"),
-        nsim = n_sim,
-        alpha = 0.05/3
-      )
-    
-    sim_rq3
+## print plot
+plot_power_rq1_random
 
-     ## assign powersim to object for later use
-    summary_sim_rq3 <-
-      
-      summary(sim_rq3) %>%
-      mutate(n_ids = n_id,
-             n_countries = n_country,
-             beta_MGE = beta,
-             random = random_intercept,
-             class = "rq3"
-      )
-
-    summary_sim_rq3
-    
-}
-
-## create tibble with all combinations of parameters
-parameter_space_rq3 <-
-
-    crossing(
-        random_slope = c(0.1, 0.5, 1.0) # for "MGE in country" random slope
-    )
-
-## run power analysis across all parameters
-pwr_rq3 <-
-     
-    future_pmap_dfr(parameter_space_rq3,
-                    simulation_swarm_rq3,
-                    .options = furrr_options(seed = TRUE),
-                    .progress = TRUE
-                    )
-
-## print output
-print(pwr_rq3)
+## save plot
+## plot_power_rq1_random %>%
+##     ggsave(filename = paste(Sys.Date(), "pwr-rq1-random.png", sep = "_"),  
+##           bg = "transparent")
 ```
