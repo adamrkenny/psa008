@@ -216,7 +216,7 @@ beta_variance <- 0.01
                            country = matrix(c(1,
                                               rep(0, 6),
                                               beta_variance,
-                                              beta_variance),
+                                              0.1),
                                             ncol = 3)), 
                   sigma = 1, 
                   data = df_rq3                 
