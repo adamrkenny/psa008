@@ -1,0 +1,76 @@
+---
+title: "Power analysis"
+author: "PSA 008"
+date: "R&R v. 5"
+
+bibliography: references.bib  
+
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    code_folding: show
+---
+
+# README {-}
+
+Here, we take the output of the power simulations and generates the plots used to determine the sample size. For each research question, this corresponds to the appropriate number of both countries (K = 20, 30, 40, 50) and participants per country (N = 100, 150, 200, 250).
+
+```{r, packages, message = FALSE}
+## packages
+library(tidyverse)
+
+## read csv files and save to object
+# pwr_rq1 <- read_csv("pwr-rq1.csv")
+for(rq in c("rq1")) {
+    assign(paste("pwr_", rq, sep = ""), 
+           read_csv(paste("./pwr-", rq, ".csv", sep = "")))
+}
+
+```
+
+# Research Question 1
+
+For RQ1, we considered the effect of minimal group (in-group vs out-group) on one of the three outcomes. We used a conservative minimal group effect size of d = 0.19, implying a beta for minimal group = 0.1. The effect size of d = 0.19 was based on that reported for experiments lacking mutual independence in @Balliet-et-al_2014, which is about half the effect size of bias in allocation tasks for artificial groups reported by @Lane_2016 (d = .37). As the minimal group effect was assumed to vary across countries, we allowed random slopes for the minimal group effect to vary within country (slope variance = 0.01, 0.02, 0.03). 
+
+
+```{r, rq1-plot}
+## add N = to facet label 
+subjects_labeller <- function(x) paste0("N = ", x)
+
+## plot
+pwr_rq1 %>%
+    mutate(countries = as.factor(countries)) %>%
+    ggplot() +
+    aes(x = beta_variance, y = mean, group = countries, colour = countries) +
+    geom_linerange(aes(ymin = lower, ymax = upper)) +
+    geom_point(size = 3) +
+    geom_line(alpha = 0.5, size = 1.5) +
+    geom_hline(yintercept = 0.95, linetype = 2) +
+    geom_hline(yintercept = 0.90, linetype = 3) +
+    scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
+    ylim(0.00, 1.00) +
+    facet_wrap(. ~ subjects,
+               labeller = as_labeller(subjects_labeller)) +
+    scale_colour_brewer(palette = "Dark2",
+                        name = "K",
+                        na.translate = FALSE) +
+    labs(x = "slope variance",
+         y = "power") +
+    labs(title = "RQ1 power analysis") +
+    guides(colour = guide_legend(reverse = TRUE)) +
+    theme_classic(
+      ## base_size = 30 ## for legibility of printed plot, comment out size
+    ) +
+    theme(panel.spacing = unit(0.5, "lines"),
+          strip.text.x = element_text(margin = margin(unit(1, "lines"))),
+          strip.background = element_blank(),
+          strip.placement = "outside")
+
+```
+
+Figure 1 shows the power obtained for RQ1. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
+
+# References {-}
+
+<div id="refs"></div>
