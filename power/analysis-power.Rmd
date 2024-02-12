@@ -30,7 +30,7 @@ for(rq in c("rq1", "rq2", "rq3")) {
 
 # Research Question 1
 
-For RQ1, we considered the effect of minimal group (in-group vs out-group) on one of the three outcomes. We used a conservative minimal group effect size of d = 0.19, implying a beta for minimal group = 0.1. The effect size was based on that reported for experiments lacking mutual independence in @Balliet-et-al_2014 (d = 0.19), which is about half the effect size of bias in allocation tasks for artificial groups reported by @Lane_2016 (d = 0.37). As the minimal group effect was assumed to vary across countries, we allowed random slopes for the minimal group effect to vary within country (slope variance = 0.01, 0.02, 0.03). 
+For RQ1, we considered the effect of minimal group (in-group vs out-group) on one of the three outcomes. We used a conservative minimal group effect size of d = 0.19, implying a beta for minimal group = 0.1. The effect size was based on that reported for experiments lacking mutual independence in @Balliet-et-al_2014 (d = 0.19), which is about half the effect size of bias in allocation tasks for artificial groups reported in @Lane_2016 (d = 0.37). As the minimal group effect was assumed to vary across countries, we allowed random slopes for the minimal group effect to vary within country (slope variance = 0.01, 0.02, 0.03). 
 
 ```{r, rq1-plot}
 ## add N = to facet label 
@@ -47,7 +47,7 @@ pwr_rq1 %>%
     geom_hline(yintercept = 0.95, linetype = 2) +
     geom_hline(yintercept = 0.90, linetype = 3) +
     scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
-    ylim(0.25, 1.00) +
+    ylim(0.5, 1.00) +
     facet_wrap(. ~ subjects,
                labeller = as_labeller(subjects_labeller)) +
     scale_colour_brewer(palette = "Dark2",
@@ -72,7 +72,7 @@ Figure 1 shows the power obtained for RQ1. We achieve power >90% for all combina
 
 # Research Question 2
 
-For RQ2, we considered the effect of a continuous moderator (e.g. self-esteem, one of six moderators) on the minimal group effect. We conducted a sensitivity analysis, in which we varied the beta for the moderator (beta = 0.05, 0.1, 0.2) and the random slope for the moderator within country (slope variance = 0.01, 0.02, 0.03). The betas for the moderator were based on the observed correlation of .11 between self-esteem and the minimal group effect in our Pilot Study 2 data. 
+For RQ2, we considered the effect of a continuous moderator (e.g. self-esteem, one of six moderators we will analyse) on the minimal group effect. We conducted a sensitivity analysis, in which we varied the beta for the moderator (beta = 0.05, 0.1, 0.2) and the random slope for the moderator within country (slope variance = 0.01, 0.02, 0.03). The betas for the moderator were based on the observed correlation of .11 between self-esteem and the minimal group effect in our Pilot Study 2 data. 
 
 ```{r, rq2-plot}
 ## add N = to facet label 
@@ -90,7 +90,7 @@ pwr_rq2 %>%
     geom_hline(yintercept = 0.95, linetype = 2) +
     geom_hline(yintercept = 0.90, linetype = 3) +
     scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
-    ylim(0.00, 1.00) +
+    # ylim(0.00, 1.00) +
     facet_wrap(beta ~ subjects,
                ncol = 4,
                labeller = labeller(subjects = as_labeller(subjects_labeller), beta = as_labeller(beta_labeller))) +
@@ -113,6 +113,7 @@ pwr_rq2 %>%
 ```
 
 Figure 2 shows the power obtained for RQ2. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50 and beta ≥ 0.1. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
+
 
 # References {-}
 
