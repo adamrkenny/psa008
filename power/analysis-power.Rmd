@@ -5,11 +5,15 @@ date: "R&R v. 5"
 
 bibliography: references.bib  
 
-output:
-  html_document:
+output: 
+  bookdown::html_document2:
     number_sections: true
     toc: true
     code_folding: hide
+    plots:
+      style: Normal
+      align: center
+      topcaption: true
 ---
 
 # README {-}
@@ -30,9 +34,47 @@ for(rq in c("rq1", "rq2", "rq3")) {
 
 # Research Question 1
 
-For RQ1, we considered the effect of minimal group (in-group vs out-group) on one of the three outcomes. We used a conservative minimal group effect size of d = 0.19, implying a beta for minimal group = 0.1. The effect size was based on that reported for experiments lacking mutual independence in @Balliet-et-al_2014 (d = 0.19), which is about half the effect size of bias in allocation tasks for artificial groups reported in @Lane_2016 (d = 0.37). As the minimal group effect was assumed to vary across countries, we allowed random slopes for the minimal group effect to vary within country (slope variance = 0.01, 0.02, 0.03). 
+For RQ1, we considered the effect of minimal group (in-group vs out-group) on one of the three outcomes. We used a conservative minimal group effect size of d = 0.19, implying a beta for minimal group = 0.1. The effect size was based on that reported for experiments lacking mutual independence in @Balliet-et-al_2014 (d = 0.19), which is about half the effect size of bias in allocation tasks for artificial groups reported in @Lane_2016 (d = 0.37). As the minimal group effect was assumed to vary across countries, we allowed random slopes for the minimal group effect to vary within country (slope variance = 0.01, 0.02, 0.03).
 
-```{r, rq1-plot}
+Assuming beta = 0.1, the slope variances change the distribution of expected effects across countries as follows (Figure \@ref(fig:effects-plot)). For slope variance = 0.01, we expect around 68% of the countries to have an effect between 0 and 0.20, with the remainder having more extreme effects. For slope variance = 0.02, we expect around 68% of the countries to have an effect between -0.05 and 0.25. For variance = 0.03, we expect around 68% of the countries to have an effect between -0.10 and 0.30. Thanks to Reviewer 3 for \@ref(fig:effects-plot).
+
+```{r, effects-plot, fig.cap = "Expected effects across countries for RQ1", fig.topcaption = TRUE}
+## number of repeats for distribution
+n_times <- 1000000
+
+## dataframe of expected effects
+df_slopes <- 
+
+  bind_rows(
+  tibble(
+    slope = rep("0.01", times = n_times),
+    values = rnorm(n_times, 0.1, sqrt(0.01))),
+  tibble(
+    slope = rep("0.02", times = n_times),
+    values = rnorm(n_times, 0.1, sqrt(0.02))),
+  tibble(
+    slope = rep("0.03", times = n_times),
+    values = rnorm(n_times, 0.1, sqrt(0.03)))
+  )
+
+## plot expected effects
+ggplot(data.frame(x = c(-1.0, 1.0)), aes(x = x)) +
+  geom_vline(xintercept = 0.1, linetype = 3) +
+  geom_density(data = df_slopes, 
+               aes(x = values, colour = slope), 
+               linewidth = 1.5) +   
+  scale_x_continuous(limits = c(-1, 1.1)) +
+  scale_y_continuous(limits = c(0, 4)) +
+  scale_colour_brewer(palette = "Dark2",
+                        name = "slope variance",
+                        na.translate = FALSE) +
+    labs(x = "beta across countries",
+         y = "density") +
+   theme_classic()
+```
+Figure \@ref(fig:rq1-plot) shows the power obtained for RQ1. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
+
+```{r, rq1-plot, fig.cap = "RQ1 power analysis", fig.topcaption = TRUE}
 ## add N = to facet label 
 subjects_labeller <- function(x) paste0("N = ", x)
 
@@ -43,7 +85,7 @@ pwr_rq1 %>%
     aes(x = beta_variance, y = mean, group = countries, colour = countries) +
     geom_linerange(aes(ymin = lower, ymax = upper)) +
     geom_point(size = 3) +
-    geom_line(alpha = 0.5, size = 1.5) +
+    geom_line(alpha = 0.5, linewidth = 1.5) +
     geom_hline(yintercept = 0.95, linetype = 2) +
     geom_hline(yintercept = 0.90, linetype = 3) +
     scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
@@ -55,7 +97,7 @@ pwr_rq1 %>%
                         na.translate = FALSE) +
     labs(x = "slope variance",
          y = "power") +
-    labs(title = "RQ1 power analysis") +
+    # labs(title = "RQ1 power analysis") +
     guides(colour = guide_legend(reverse = TRUE)) +
     theme_classic(
       ## base_size = 30 ## for legibility of printed plot, comment out size
@@ -68,13 +110,13 @@ pwr_rq1 %>%
 
 ```
 
-Figure 1 shows the power obtained for RQ1. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
-
 # Research Question 2
 
 For RQ2, we considered the effect of a continuous moderator (e.g. self-esteem, one of six moderators we will analyse) on the minimal group effect. We conducted a sensitivity analysis, in which we varied the beta for the moderator (beta = 0.05, 0.1, 0.2) and the random slope for the moderator within country (slope variance = 0.01, 0.02, 0.03). The betas for the moderator were based on the observed correlation of .11 between self-esteem and the minimal group effect in our Pilot Study 2 data. 
 
-```{r, rq2-plot}
+Figure \@ref(fig:rq2-plot) shows the power obtained for RQ2. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50 and beta ≥ 0.1. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
+
+```{r, rq2-plot, fig.cap = "RQ2 power analysis", fig.topcaption = TRUE}
 ## add N = to facet label 
 subjects_labeller <- function(x) paste0("N = ", x)
 beta_labeller <- function(x) paste0("beta = ", x)
@@ -86,7 +128,7 @@ pwr_rq2 %>%
     aes(x = beta_variance, y = mean, group = countries, colour = countries) +
     geom_linerange(aes(ymin = lower, ymax = upper)) +
     geom_point(size = 3) +
-    geom_line(alpha = 0.5, size = 1.5) +
+    geom_line(alpha = 0.5, linewidth = 1.5) +
     geom_hline(yintercept = 0.95, linetype = 2) +
     geom_hline(yintercept = 0.90, linetype = 3) +
     scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
@@ -99,7 +141,7 @@ pwr_rq2 %>%
                         na.translate = FALSE) +
     labs(x = "slope variance",
          y = "power") +
-    labs(title = "RQ2 power analysis") +
+    # labs(title = "RQ2 power analysis") +
     guides(colour = guide_legend(reverse = TRUE)) +
     theme_classic(
       ## base_size = 30 ## for legibility of printed plot, comment out size
@@ -111,9 +153,6 @@ pwr_rq2 %>%
           strip.background = element_blank(),
           strip.placement = "outside")
 ```
-
-Figure 2 shows the power obtained for RQ2. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50 and beta ≥ 0.1. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
-
 
 # References {-}
 
