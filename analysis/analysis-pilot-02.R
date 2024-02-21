@@ -279,7 +279,7 @@ df_rq1_att <-
 model_rq1_att <-
     
     lmerTest::lmer(
-                  decision ~ group + (1 | id) + (group | country)
+                  decision ~ group + (group | country) + (1 | id) 
                 , contrasts = list(group = "contr.sum")
                 , data = df_rq1_att)
 
@@ -739,23 +739,21 @@ model_rq2_trust_institution <-
                 , data = df_rq2_att)
 
 summary(model_rq2_trust_institution)
-drop1(model_rq2_trust_institution,test="Chisq")
+drop1(model_rq2_trust_institution, ddf="lme4", test="Chi")
 
 ## 1 model for self-esteem (hypothesis H2.3)
 
 ## model with esteem
-model_rq2_esteem <-
-    
+model_rq2_esteem <-    
     lmerTest::lmer(
                   min_bias ~ 1 + self_esteem + (1 | country)
                 , data = df_rq2_att)
 summary(model_rq2_esteem)
-drop1(model_rq2_esteem,test="Chisq")
+drop1(model_rq2_esteem, ddf="lme4", test="Chi") 
 
 cor.test(df_rq2_att$self_esteem,df_rq2_att$min_bias) # simple correlation is .11
 cor.test(df_rq2_dg_first$self_esteem,df_rq2_dg_first$min_bias) # ns, r = -.04
 cor.test(df_rq2_dg_third$self_esteem,df_rq2_dg_third$min_bias) # r = .08
-
 
 ## 2 models for belief and status (hypothesis H2.4)
 
@@ -798,8 +796,8 @@ df_rq3_att <-
     pivot_longer(cols = c(att_nat_bias, att_fam_bias),, 
                  names_to = "group_type",
                  values_to = "att_real_bias") %>%
-    mutate(group_type = case_when(str_detect(group_type, "nat") ~ "nat",
-                                  str_detect(group_type, "fam") ~ "fam"
+    mutate(group_type = case_when(str_detect(group_type, "nat") ~ "1nat",
+                                  str_detect(group_type, "fam") ~ "2fam"
                                   ))
 
 ## real-world
@@ -823,7 +821,7 @@ model_real_world_avg <-
                  data = df_rq3_att)
 
 summary(model_real_world_avg)
-drop1(model_real_world_avg,test='Chisq')
+drop1(model_real_world_avg, ddf="lme4", test="Chi")
 
 # look at simple correlations between MGE and real-world for each type of real-world bias
 nat <- filter(df_rq3_att,group_type=='nat')
