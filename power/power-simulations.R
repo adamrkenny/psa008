@@ -74,7 +74,7 @@ parameter_space_rq1 <-
     crossing(
         N = c(100, 150, 200, 250), # number of subjects per country
         K = c(30, 40, 50), # number of countries
-        beta = c(0.10, 0.05, 0.15), # beta for group 
+        beta = c(0.05, 0.10, 0.15), # beta for group 
         beta_variance = c(0.01, 0.02, 0.03) # beta for random slope
     )
 
@@ -152,7 +152,7 @@ parameter_space_rq2 <-
     crossing(
         N = c(100, 150, 200, 250), # number of subjects per country
         K = c(30, 40, 50), # number of countries
-        beta = c(0.10, 0.05, 0.15), # beta for "predictor" 
+        beta = c(0.05, 0.10, 0.15), # beta for "predictor" 
         beta_variance = c(0.01, 0.02, 0.03) # beta for random slope
     )
 
@@ -248,7 +248,7 @@ parameter_space_rq3 <-
     crossing(
         N = c(100, 150, 200, 250), # number of subjects per country
         K = c(30, 40, 50), # number of countries
-        beta_interaction = c(0.05, 0.025, 0.10), # beta for marginal effect of MGE 
+        beta_MGE = c(0.025, 0.05, 0.075), # beta for marginal effect of MGE 
         beta_variance = c(0.01, 0.02, 0.03) # beta for random slope
     )
 
