@@ -18,25 +18,28 @@ output:
 
 # README {-}
 
-Here, we take the output of the power simulations and generates the plots used to determine the sample size. For each research question, this corresponds to the appropriate number of both countries (K = 30, 40, 50) and participants per country (N = 100, 150, 200, 250).
+Here, we take the `.csv` output of the power simulations (`power-simulations.R`) and generate the plots used to determine the sample size. The plots are included in the supplementary information. For each research question, the sample size corresponds to the appropriate number of both countries (K = 30, 40, 50) and participants per country (N = 100, 150, 200, 250).
 
 ```{r, packages, message = FALSE}
 ## packages
 library(tidyverse)
+library(simr)
+library(lmerTest)
+library(sjPlot)
+library(patchwork)
 
 ## read csv files and save to object
 for(rq in c("rq1", "rq2", "rq3")) {
     assign(paste("pwr_", rq, sep = ""), 
            read_csv(paste("./pwr-", rq, ".csv", sep = "")))
 }
-
 ```
 
 # Research Question 1
 
-For RQ1, we considered the effect of minimal group (in-group vs out-group) on one of the three outcomes. We used a conservative minimal group effect size of d = 0.19, implying a beta for minimal group = 0.1. The effect size was based on that reported for experiments lacking mutual independence in @Balliet-et-al_2014 (d = 0.19), which is about half the effect size of bias in allocation tasks for artificial groups reported in @Lane_2016 (d = 0.37). As the minimal group effect was assumed to vary across countries, we allowed random slopes for the minimal group effect to vary within country (slope variance = 0.01, 0.02, 0.03).
+For RQ1, we considered the effect of minimal group (in-group vs out-group) on one of the three outcomes. We used a conservative minimal group effect size of $d$ = 0.19, implying a beta for minimal group = 0.1. The effect size was based on that reported for experiments lacking mutual independence in @Balliet-et-al_2014 ($d$ = 0.19), which is about half the effect size of bias in allocation tasks for artificial groups reported in @Lane_2016 ($d$ = 0.37). We also tested smaller (beta = 0.05) and larger (beta = 0.15) values. As the minimal group effect was assumed to vary across countries, we allowed random slopes for the minimal group effect to vary within country (slope variance = 0.01, 0.02, 0.03).
 
-Assuming beta = 0.1, the slope variances change the distribution of expected effects across countries as follows (Figure \@ref(fig:effects-plot)). For slope variance = 0.01, we expect around 68% of the countries to have an effect between 0 and 0.20, with the remainder having more extreme effects. For slope variance = 0.02, we expect around 68% of the countries to have an effect between -0.05 and 0.25. For variance = 0.03, we expect around 68% of the countries to have an effect between -0.10 and 0.30. Thanks to Reviewer 3 for \@ref(fig:effects-plot).
+Assuming beta = 0.1, the slope variances change the distribution of expected effects across countries as follows (Figure \@ref(fig:effects-plot)). For slope variance = 0.01, we expect around 68% of the countries to have an effect between 0 and 0.20, with the remainder having more extreme effects. For slope variance = 0.02, we expect around 68% of the countries to have an effect between -0.05 and 0.25. For variance = 0.03, we expect around 68% of the countries to have an effect between -0.10 and 0.30. Thanks to Reviewer 3 for  \@ref(fig:effects-plot).
 
 ```{r, effects-plot, fig.cap = "Expected effects across countries for RQ1", fig.topcaption = TRUE}
 ## number of repeats for distribution
@@ -72,14 +75,16 @@ ggplot(data.frame(x = c(-1.0, 1.0)), aes(x = x)) +
          y = "density") +
    theme_classic()
 ```
-Figure \@ref(fig:rq1-plot) shows the power obtained for RQ1. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
+Figure \@ref(fig:rq1-plot) shows the power obtained for RQ1. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50 and beta ≥ 0.1. At N = 200, we achieve power >95% for beta = 0.1 when the slope variance is ≤ 0.02 and K ≥ 40.
 
 ```{r, rq1-plot, fig.cap = "RQ1 power analysis", fig.topcaption = TRUE}
-## add N = to facet label 
+## add X = to facet label and consistent y axis 
 subjects_labeller <- function(x) paste0("N = ", x)
+beta_labeller <- function(x) paste0("\u03B2 = ", x)
+formatter <- function(...){function(x) format(round(x, 2), ...)}
 
 ## plot
-pwr_rq1 %>%
+plot <- pwr_rq1 %>%
     mutate(countries = as.factor(countries)) %>%
     ggplot() +
     aes(x = beta_variance, y = mean, group = countries, colour = countries) +
@@ -88,40 +93,60 @@ pwr_rq1 %>%
     geom_line(alpha = 0.5, linewidth = 1.5) +
     geom_hline(yintercept = 0.95, linetype = 2) +
     geom_hline(yintercept = 0.90, linetype = 3) +
+    geom_hline(yintercept = 1.00, alpha = 0) +
+    geom_hline(yintercept = 0.60, alpha = 0) +
     scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
-    ylim(0.5, 1.00) +
-    facet_wrap(. ~ subjects,
-               labeller = as_labeller(subjects_labeller)) +
+     scale_y_continuous(labels = formatter(nsmall = 2)) +
+#ylim(0.5, 1.00) +
+       facet_wrap(beta ~ subjects,
+               ncol = 4,
+               scales = "free_y",
+               labeller = labeller(subjects = as_labeller(subjects_labeller), beta = as_labeller(beta_labeller), .multi_line = FALSE)) +
     scale_colour_brewer(palette = "Dark2",
                         name = "K",
                         na.translate = FALSE) +
     labs(x = "slope variance",
          y = "power") +
-    # labs(title = "RQ1 power analysis") +
     guides(colour = guide_legend(reverse = TRUE)) +
-    theme_classic(
-      ## base_size = 30 ## for legibility of printed plot, comment out size
-    ) +
+    theme_classic() +
     theme(legend.position="bottom",
            panel.spacing = unit(0.5, "lines"),
           strip.text.x = element_text(margin = margin(unit(1, "lines"))),
           strip.background = element_blank(),
-          strip.placement = "outside")
+          strip.placement = "outside") 
+plot
+```
 
+```{r, rq1-plot-save, eval = FALSE}
+plot_save <- plot +
+  labs(title = "RQ1 power analysis") +
+  ## for legibility of printed plot, comment out size
+  theme_classic(base_size = 15) +
+      theme(legend.position="bottom",
+           panel.spacing = unit(0.5, "lines"),
+          strip.text.x = element_text(margin = margin(unit(1, "lines"))),
+          strip.background = element_blank(),
+          strip.placement = "outside") 
+
+plot_save %>%
+  ggsave(filename = paste(Sys.Date(), "power-rq1.png", sep = "_"),
+         bg = "transparent")
 ```
 
 # Research Question 2
 
-For RQ2, we considered the effect of a continuous moderator (e.g. self-esteem, one of six moderators we will analyse) on the minimal group effect. We conducted a sensitivity analysis, in which we varied the beta for the moderator (beta = 0.05, 0.1, 0.2) and the random slope for the moderator within country (slope variance = 0.01, 0.02, 0.03). The betas for the moderator were based on the observed correlation of .11 between self-esteem and the minimal group effect in our Pilot Study 2 data. 
+For RQ2, we considered the effect of a continuous moderator (e.g. self-esteem, one of six moderators we will analyse) on the minimal group effect. We conducted a sensitivity analysis, in which we varied the beta for the moderator (beta = 0.05, 0.1, 0.2) and the random slope for the moderator within country (slope variance = 0.01, 0.02, 0.03). The betas for the moderator were based on the observed correlation of .11 between self-esteem and the minimal group effect in our Pilot Study 2 data. Note that to account for variance in the minimal group effect across countries, we set the random variance = 1.5. The value was based on previous versions of the power analysis, and the results do not change substantially if decreased (= 1.0) or increased (= 4.0).
 
-Figure \@ref(fig:rq2-plot) shows the power obtained for RQ2. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50 and beta ≥ 0.1. At N = 200, we achieve power >95% when the slope variance is ≤ 0.02 and K ≥ 40.
+Figure \@ref(fig:rq2-plot) shows the power obtained for RQ2. We achieve power >90% for all combinations of effect size and slope variance when K ≥ 50 and beta ≥ 0.1. At N = 200, we achieve power >95% for beta = 0.1 when the slope variance is ≤ 0.02 and K ≥ 40.
 
 ```{r, rq2-plot, fig.cap = "RQ2 power analysis", fig.topcaption = TRUE}
-## add N = to facet label 
+## add X = to facet label and consistent y axis 
 subjects_labeller <- function(x) paste0("N = ", x)
-beta_labeller <- function(x) paste0("beta = ", x)
+beta_labeller <- function(x) paste0("\u03B2 = ", x)
+formatter <- function(...){function(x) format(round(x, 2), ...)}
 
 ## plot
+plot <-
 pwr_rq2 %>%
     mutate(countries = as.factor(countries)) %>%
     ggplot() +
@@ -131,11 +156,15 @@ pwr_rq2 %>%
     geom_line(alpha = 0.5, linewidth = 1.5) +
     geom_hline(yintercept = 0.95, linetype = 2) +
     geom_hline(yintercept = 0.90, linetype = 3) +
+    geom_hline(yintercept = 1.00, alpha = 0) +
+    geom_hline(yintercept = 0.60, alpha = 0) +
     scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
-    # ylim(0.00, 1.00) +
+ scale_y_continuous(labels = formatter(nsmall = 2)) +
+  # ylim(0.00, 1.00) +
     facet_wrap(beta ~ subjects,
                ncol = 4,
-               labeller = labeller(subjects = as_labeller(subjects_labeller), beta = as_labeller(beta_labeller))) +
+               scales = "free_y",
+               labeller = labeller(subjects = as_labeller(subjects_labeller), beta = as_labeller(beta_labeller), .multi_line = FALSE)) +
     scale_colour_brewer(palette = "Dark2",
                         name = "K",
                         na.translate = FALSE) +
@@ -144,7 +173,7 @@ pwr_rq2 %>%
     # labs(title = "RQ2 power analysis") +
     guides(colour = guide_legend(reverse = TRUE)) +
     theme_classic(
-      ## base_size = 30 ## for legibility of printed plot, comment out size
+      # base_size = 16 ## for legibility of printed plot, comment out size
     ) +
     theme(legend.position="bottom",
           axis.text.x = element_text(angle = 45, hjust = 1),
@@ -152,6 +181,155 @@ pwr_rq2 %>%
           strip.text.x = element_text(margin = margin(unit(1, "lines"))),
           strip.background = element_blank(),
           strip.placement = "outside")
+plot
+```
+
+```{r, rq2-plot-save, eval = FALSE}
+plot_save <- plot +
+  labs(title = "RQ2 power analysis") +
+  ## for legibility of printed plot, comment out size
+  theme_classic(base_size = 15) +
+      theme(legend.position="bottom",
+           panel.spacing = unit(0.5, "lines"),
+          strip.text.x = element_text(margin = margin(unit(1, "lines"))),
+          strip.background = element_blank(),
+          strip.placement = "outside") 
+
+plot_save %>%
+  ggsave(filename = paste(Sys.Date(), "power-rq2.png", sep = "_"),
+         bg = "transparent")
+```
+
+# Research Question 3
+
+For RQ3, the primary effect of interest is the strength of the relationship between the predictor MGE and bias towards real-world groups. There is little past work upon which to estimate the strength of this relationship, so we used our Pilot Study 2 as a rough guide (beta = .13). To estimate the effect of MGE in a model that also included a predictor for group type (family vs. national) as well as the interaction between group type and MGE, we contrast coded group type such that the beta for MGE reflects its marginal effect collapsed across group type. In a model with contrast codes of -1 and 1, the estimated beta for MGE would be half of its simple (main) effect; we therefore tested values for the beta of MGE of 0.025, 0.05, and 0.10. Again, we included random slopes for MGE within country (slope variance = 0.01, 0.02, 0.03).
+
+Figure \@ref(fig:rq3-shape-interaction) shows the simulated data analyzed in the simulations across some of the parameters. We are most interested in the (expected) effect of MGE on real-world bias.
+
+```{r, rq3-shape-interaction, fig.cap = "RQ3 shape of interactions", fig.topcaption = TRUE}
+
+# iterate over beta MGEs and random slope
+ for (beta_MGE in c(0.025, 0.05, 0.075)) {
+  for (beta_variance in c(0.01, 0.03)) {
+  
+    # number of participants per country and number of countries
+    N <- 250
+    K <- 50
+    
+    ## set variables for sample
+    country <- rep(1:K, each = 2*N) 
+    subject <- rep(1:(N*K), each = 2)
+    realbias <- rnorm(N*K*2, mean = 0, sd = 1) # variable for outcome
+    MGE <- rep(rnorm(N*K, mean = 0, sd = 1), each = 2) # variable for minimal
+    grouptype <- rep(c(0, 1), times = N*K) # variable for national/family
+
+    ## bind variables into dataframe
+    df_rq3 <-
+        data.frame(
+            country = factor(country),
+            subject = factor(subject),
+            realbias = realbias,
+            MGE = MGE,
+            grouptype = factor(grouptype)
+        )
+    contrasts(df_rq3$grouptype) <- contr.sum(2)
+
+    beta_grouptype <-  0.075 # 0.2 
+    beta_interaction <- 0.02 # 0.05
+
+  model_rq3 <-
+        simr::makeLmer(
+                  realbias ~ MGE * grouptype + (1 | subject) +
+                      (1 + MGE + grouptype | country), 
+                  fixef = c(0, # beta for realbias
+                            beta_MGE, # beta for MGE
+                            beta_grouptype, # beta_grouptype, # beta for grouptype
+                            beta_interaction), # beta_interaction), # beta for interaction      
+                  VarCorr = 
+                      list(people = 1,
+                           country = matrix(c(1.5, # NB var of country random intercept
+                                              rep(0, 6),
+                                              beta_variance,
+                                              0.01),
+                                            ncol = 3)), 
+                  sigma = 1, 
+                  data = df_rq3                 
+              )
+
+    assign(paste0("ip_b", beta_MGE, "_v", beta_variance),
+          sjPlot::plot_model(model_rq3, type = "int") +
+            theme_classic() +
+            ggtitle(label = paste0("\u03B2 = ", beta_MGE, ", random slope = ", beta_variance)) 
+           )
+
+  }
+ }
+
+## combine plots
+(ip_b0.025_v0.01 + ip_b0.025_v0.03) /
+(ip_b0.05_v0.01 + ip_b0.05_v0.03) /
+(ip_b0.075_v0.01 + ip_b0.075_v0.03) + 
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+```
+
+Figure \@ref(fig:rq3-plot) shows the power obtained for RQ3. At N = 200, we achieved power > 95% for beta = 0.075 when the slope variance is ≤ 0.02 and K ≥ 30.
+
+```{r, rq3-plot, fig.cap = "RQ3 power analysis", fig.topcaption = TRUE}
+## add X = to facet label and consistent y axis 
+subjects_labeller <- function(x) paste0("N = ", x)
+beta_labeller <- function(x) paste0("\u03B2 = ", x)
+formatter <- function(...){function(x) format(round(x, 2), ...)}
+
+## plot
+plot <-
+pwr_rq3 %>%
+    mutate(countries = as.factor(countries)) %>%
+    ggplot() +
+    aes(x = beta_variance, y = mean, group = countries, colour = countries) +
+    geom_linerange(aes(ymin = lower, ymax = upper)) +
+    geom_point(size = 3) +
+    geom_line(alpha = 0.5, linewidth = 1.5) +
+    geom_hline(yintercept = 0.95, linetype = 2) +
+    geom_hline(yintercept = 0.90, linetype = 3) +
+    geom_hline(yintercept = 1.00, alpha = 0) +
+  geom_hline(yintercept = 0.30, alpha = 0) + scale_x_continuous(breaks = c(0.01, 0.02, 0.03)) +
+ scale_y_continuous(labels = formatter(nsmall = 2)) +
+  # ylim(0.00, 1.00) +
+    facet_wrap(beta_MGE ~ subjects,
+               ncol = 4,
+               scales = "free_y",
+               labeller = labeller(subjects = as_labeller(subjects_labeller), beta_MGE = as_labeller(beta_labeller), .multi_line = FALSE)) +
+    scale_colour_brewer(palette = "Dark2",
+                        name = "K",
+                        na.translate = FALSE) +
+    labs(x = "slope variance",
+         y = "power") +
+    guides(colour = guide_legend(reverse = TRUE)) +
+    theme_classic() +
+    theme(legend.position="bottom",
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.spacing = unit(0.5, "lines"),
+          strip.text.x = element_text(margin = margin(unit(1, "lines"))),
+          strip.background = element_blank(),
+          strip.placement = "outside")
+plot
+```
+
+```{r, rq3-plot-save, eval = FALSE}
+plot_save <- plot +
+  labs(title = "RQ3 power analysis") +
+  ## for legibility of printed plot, comment out size
+  theme_classic(base_size = 14.5) +
+      theme(legend.position="bottom",
+           panel.spacing = unit(0.5, "lines"),
+          strip.text.x = element_text(margin = margin(unit(1, "lines"))),
+          strip.background = element_blank(),
+          strip.placement = "outside") 
+
+plot_save %>%
+  ggsave(filename = paste(Sys.Date(), "power-rq3.png", sep = "_"),
+         bg = "transparent")
 ```
 
 # References {-}
