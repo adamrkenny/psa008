@@ -5,7 +5,12 @@ library(lmerTest)
 library(furrr)
 
 ## simulation parameters
-n_sim <- 10 # set to 1000 for reliable results 
+## n_sim <- 2 # for troubleshooting 
+n_sim <- 1000 # for reliable results 
+
+plan(multisession) # to speed up simulations
+
+set.seed(1971)
 
 ##################################################
 ## RQ1
@@ -48,7 +53,9 @@ simulation_swarm_rq1 <- function(N, K, beta, beta_variance) {
             test = fixed("group"),
             nsim = n_sim,
             alpha = 0.05/3
-      )
+        )
+
+doTest(model_rq1)
 
     ## create table with powerSim output and info on variables
     summary(sim_rq1) %>%
@@ -66,8 +73,8 @@ parameter_space_rq1 <-
 
     crossing(
         N = c(100, 150, 200, 250), # number of subjects per country
-        K = c(20, 30, 40, 50), # number of countries
-        beta = c(0.1), # beta for group 
+        K = c(30, 40, 50), # number of countries
+        beta = c(0.10, 0.05, 0.15), # beta for group 
         beta_variance = c(0.01, 0.02, 0.03) # beta for random slope
     )
 
@@ -82,7 +89,7 @@ pwr_rq1 <-
 
 ## write output
 pwr_rq1 %>%
-    write.csv(file = paste0("./pwr-rq1.csv"))
+    write_csv(file = paste0("./pwr-rq1.csv"))
 
 ##################################################
 ## RQ2
@@ -101,21 +108,21 @@ simulation_swarm_rq2 <- function(N, K, beta, beta_variance) {
             country = factor(country),
             subject = factor(subject),
             MGE = MGE,
-            ## selfesteem = scale(selfesteem, scale = F)
             predictor = selfesteem
+            ## predictor = scale(selfesteem, scale = F)
         )
 
     model_rq2 <-
         simr::makeLmer(
-                  MGE ~ 1 + predictor + (1 + predictor | country),
+                  MGE ~ 1 + predictor +
+                      (1 + predictor | country),
                   fixef = c(0, beta),
-                  VarCorr = matrix(c(1.5, # NB var of country random intercept
+                  VarCorr = matrix(c(1.5, # var of country random intercept
                                      0, 0, beta_variance),
                                    ncol = 2),
                   sigma = 1,
                   data = df_rq2
               )
-
     model_rq2
 
     ## check power
@@ -126,7 +133,7 @@ simulation_swarm_rq2 <- function(N, K, beta, beta_variance) {
             test = fixed("predictor", "kr"), # "kr"/"pb" appropriate for continuous
             nsim = n_sim,
             alpha = 0.05/3
-      )
+        )
 
     ## create table with powerSim output and info on variables
     summary(sim_rq2) %>%
@@ -144,8 +151,8 @@ parameter_space_rq2 <-
 
     crossing(
         N = c(100, 150, 200, 250), # number of subjects per country
-        K = c(20, 30, 40, 50), # number of countries
-        beta = c(0.05, 0.10, 0.15), # beta for "predictor" 
+        K = c(30, 40, 50), # number of countries
+        beta = c(0.10, 0.05, 0.15), # beta for "predictor" 
         beta_variance = c(0.01, 0.02, 0.03) # beta for random slope
     )
 
@@ -160,18 +167,12 @@ pwr_rq2 <-
 
 ## write output
 pwr_rq2 %>%
-    write.csv(file = paste0("./pwr-rq2.csv"))
+    write_csv(file = paste0("./pwr-rq2.csv"))
 
 ##################################################
 ## RQ3
 
-## NB these are varied across iterations, here I've provided defaults for code checking 
-beta_MGE <- 0.1 # pilot 2: 0.32
-beta_grouptype <- 0.1 # pilot 2: -0.14
-beta_interaction <- 0.1 # pilot 2: 0.11
-beta_variance <- 0.01
-
-## simulation_swarm_rq3 <- function(N, K, beta_MGE, beta_variance) {
+simulation_swarm_rq3 <- function(N, K, beta_MGE, beta_variance) {
 
     ## set variables for sample
     country <- rep(1:K, each = 2*N) 
@@ -187,47 +188,48 @@ beta_variance <- 0.01
             subject = factor(subject),
             realbias = realbias,
             MGE = MGE,
-            ## MGE = scale(MGE, scale = FALSE),
             grouptype = factor(grouptype)
         )
 
     contrasts(df_rq3$grouptype) <- contr.sum(2)
 
-        model_rq3 <-
+    model_rq3 <-
         simr::makeLmer(
                   realbias ~ MGE * grouptype + (1 | subject) +
                       (1 + MGE + grouptype | country), 
                   fixef = c(0, # beta for realbias
-                            beta_MGE, # beta for MGE
-                            0.1, # beta_grouptype, # beta for grouptype
-                            0.1 # beta_interaction), # beta for interaction      
+                            beta_MGE, # beta for MGE (marginal)
+                            0.075, # beta for grouptype
+                            0.02), # beta for interaction      
                   VarCorr = 
                       list(people = 1,
-                           country = matrix(c(1,
+                           country = matrix(c(1.5, # var of country random intercept
                                               rep(0, 6),
                                               beta_variance,
-                                              0.1),
+                                              0.01),
                                             ncol = 3)), 
                   sigma = 1, 
                   data = df_rq3                 
               )
+    
+    summary(model_rq3)
 
-model_rq3
-
-## ## you can check interaction plot:
-sjPlot::plot_model(model_rq3, type='int')
+    ## you can check interaction plot:
+    ## sjPlot::plot_model(model_rq3, type = "int")
 
     ## check power
     sim_rq3 <- 
       
         powerSim(
             model_rq3,
-            test = fcompare(~grouptype), # power for MGE by comparing model without it
+            test = fixed("MGE", "z"), 
+            ## test = fcompare(~grouptype), # alternatively, power for MGE by comparing model without it
             nsim = n_sim,
             alpha = 0.05/3,
             fitOpts = list(control = lmerControl(optCtrl = list(maxfun = 2e5), optimizer = "bobyqa"))
             # solution for convergence issues https://github.com/pitakakariki/simr/issues/169
-      )
+        )
+
 
     ## create table with powerSim output and info on variables
     summary(sim_rq3) %>%
@@ -237,7 +239,7 @@ sjPlot::plot_model(model_rq3, type='int')
            beta_variance = beta_variance,
            class = "rq3"
            )
-
+    
 }
 
 ## create tibble with all combinations of parameters
@@ -246,7 +248,7 @@ parameter_space_rq3 <-
     crossing(
         N = c(100, 150, 200, 250), # number of subjects per country
         K = c(30, 40, 50), # number of countries
-        beta_interaction = c(0.05, 0.10, 0.15), # beta for "MGE:grouptype1", gone lower as interaction 
+        beta_interaction = c(0.05, 0.025, 0.10), # beta for marginal effect of MGE 
         beta_variance = c(0.01, 0.02, 0.03) # beta for random slope
     )
 
@@ -264,4 +266,4 @@ print(pwr_rq3)
 
 ## write output
 pwr_rq3 %>%
-    write.csv(file = paste0("./pwr-rq3.csv"))
+    write_csv(file = paste0("./pwr-rq3.csv"))
