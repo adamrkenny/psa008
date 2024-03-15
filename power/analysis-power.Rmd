@@ -273,7 +273,7 @@ Figure \@ref(fig:rq3-shape-interaction) shows the simulated data analyzed in the
   theme(legend.position = "bottom")
 ```
 
-Figure \@ref(fig:rq3-plot) shows the power obtained for RQ3. At N = 200, we achieved power > 95% for beta = 0.075 when the slope variance is ≤ 0.02 and K ≥ 30.
+Figure \@ref(fig:rq3-plot) shows the power obtained for RQ3. at N = 200, we achieved power > 95% for beta = 0.075 when the slope variance is ≤ 0.02 and K ≥ 30.
 
 ```{r, rq3-plot, fig.cap = "RQ3 power analysis", fig.topcaption = TRUE}
 ## add X = to facet label and consistent y axis 
