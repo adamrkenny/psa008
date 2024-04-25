@@ -16,6 +16,7 @@ packages <- (
   "tidyverse", # data wrangling
   "lme4", # random effects models
   "lmerTest", # random effects models
+  "parameters", # equivalence testing  
   "metafor", # for meta-analysis
   "patchwork" # plots
 )
@@ -98,6 +99,25 @@ model_rq1_att <-
 
 ## summarise
 summary(model_rq1_att)
+
+## equivalence test
+
+## option 1: pkg parameter
+equivalence_test(
+  model_rq1_att,
+  ci = 0.95
+)
+
+## option 2: pkg lmerTest
+
+## bounds
+bound_u <-  0.1  # upper equivalence bound
+bound_l <- -0.1  # lower equivalence bound
+
+## t value for test against lower bound
+lower <- contest1D(model_rq1_att, c(0, 1), confint = TRUE, rhs = bound_l)
+## t value for test against upper bound
+upper <- contest1D(model_rq1_att, c(0, 1), confint = TRUE, rhs = bound_u) 
 
 ##### robustness checks
 
