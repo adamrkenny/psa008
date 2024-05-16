@@ -101,23 +101,27 @@ model_rq1_att <-
 summary(model_rq1_att)
 
 ## equivalence test
-
-## option 1: pkg parameter
-equivalence_test(
-  model_rq1_att,
-  ci = 0.95
+## NB conducted if fixed effect (i.e. group) is non-sig
+parameters::equivalence_test(
+                model_rq1_att,
+                rule = "classic",
+                ci = 0.95
 )
 
-## option 2: pkg lmerTest
+## power for equivalence test RQ1 
+power_t_TOST(
+    eqb = 0.1,
+    power = 0.95,
+    alpha = .05/3,
+    type = "paired"
+)
 
-## bounds
-bound_u <-  0.1  # upper equivalence bound
-bound_l <- -0.1  # lower equivalence bound
-
-## t value for test against lower bound
-lower <- contest1D(model_rq1_att, c(0, 1), confint = TRUE, rhs = bound_l)
-## t value for test against upper bound
-upper <- contest1D(model_rq1_att, c(0, 1), confint = TRUE, rhs = bound_u) 
+## power for equivalence test RQ2/3
+power_z_cor(alpha = 0.05/3, 
+            power= 0.95, 
+            rho = 0.1,
+            null = 0.1,
+            alternative = "equivalence")
 
 ##### robustness checks
 
